@@ -180,11 +180,6 @@ struct NudgeSettingsPanelView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SettingsSidebarHeader(
-                title: model.profile.hasCompletedOnboarding ? "Settings" : "Setup",
-                subtitle: "Guide and setup."
-            )
-
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(model.settingsSteps) { step in
                     Button {
