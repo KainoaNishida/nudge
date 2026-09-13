@@ -296,18 +296,8 @@ private struct OperationalStatusButton: View {
 }
 
 private struct NudgeAppMark: View {
-    @Environment(\.nudgePalette) private var palette
-
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(palette.primary)
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: 30, height: 30)
-        .accessibilityLabel("Nudge")
+        NudgeSymbol(size: 30)
     }
 }
 
@@ -1114,12 +1104,7 @@ struct EmptyStateView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(palette.completion.opacity(0.14))
                     .frame(width: 68, height: 68)
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(palette.primary)
-                    .frame(width: 44, height: 44)
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 23, weight: .semibold))
-                    .foregroundStyle(.white)
+                NudgeSymbol(size: 44)
             }
             Text("Nothing to complete")
                 .font(.headline.weight(.semibold))

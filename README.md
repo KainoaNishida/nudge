@@ -11,7 +11,7 @@ Nudge is a macOS-first conversation assistant prototype. This repository current
 
 ## Using Nudge
 
-Nudge runs as a menu bar app. After launch, click the checklist icon or the `Nudge` title in the macOS menu bar to open the queue.
+Nudge runs as a menu bar app. After launch, click the Nudge symbol or the `Nudge` title in the macOS menu bar to open the queue.
 
 For realistic first-run behavior, use the packaged development app instead of `swift run`:
 

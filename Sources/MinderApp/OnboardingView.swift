@@ -286,17 +286,8 @@ private struct SettingsSidebarHeader: View {
 }
 
 private struct SettingsNudgeMark: View {
-    @Environment(\.nudgePalette) private var palette
-
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(palette.primary)
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: 30, height: 30)
+        NudgeSymbol(size: 30)
     }
 }
 

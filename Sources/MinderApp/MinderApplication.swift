@@ -70,7 +70,7 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
             self.popover = popover
 
             let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-            statusItem.button?.image = NSImage(systemSymbolName: "checklist.checked", accessibilityDescription: "Nudge")
+            statusItem.button?.image = NudgeSymbolImage.menuBarTemplate()
             statusItem.button?.target = self
             statusItem.button?.action = #selector(togglePopover)
             self.statusItem = statusItem
