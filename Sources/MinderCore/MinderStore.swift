@@ -382,6 +382,7 @@ public final class MinderStore {
                     guard let raw = row["state"] ?? nil else { return nil }
                     return SuggestionState(rawValue: raw)
                 } ?? .new
+                let completedAt = existing.flatMap { DateCoding.date(from: $0["completed_at"] ?? nil) }
 
                 let suggestion = Suggestion(
                     id: id,
@@ -401,7 +402,8 @@ public final class MinderStore {
                     ),
                     createdAt: createdAt,
                     updatedAt: now,
-                    snoozedUntil: existing.flatMap { DateCoding.date(from: $0["snoozed_until"] ?? nil) }
+                    snoozedUntil: existing.flatMap { DateCoding.date(from: $0["snoozed_until"] ?? nil) },
+                    completedAt: completedAt
                 )
 
                 try database.execute(
@@ -409,9 +411,9 @@ public final class MinderStore {
                     INSERT INTO suggestions (
                         id, type, state, title, action_text, due_date, source_id, thread_id,
                         message_id, source_app, thread_title, evidence_snippet, source_timestamp,
-                        confidence, created_at, updated_at, snoozed_until
+                        confidence, created_at, updated_at, snoozed_until, completed_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET
                         type = excluded.type,
                         title = excluded.title,
@@ -444,7 +446,8 @@ public final class MinderStore {
                         .double(suggestion.confidence),
                         requiredDate(suggestion.createdAt),
                         requiredDate(suggestion.updatedAt),
-                        optionalDate(suggestion.snoozedUntil)
+                        optionalDate(suggestion.snoozedUntil),
+                        optionalDate(suggestion.completedAt)
                     ]
                 )
                 if suggestion.state.isQueueActive {
@@ -468,13 +471,15 @@ public final class MinderStore {
     }
 
     public func updateSuggestionState(id: String, state: SuggestionState, snoozedUntil: Date? = nil) throws {
+        let now = Date()
         try database.transaction {
             try database.execute(
-                "UPDATE suggestions SET state = ?, updated_at = ?, snoozed_until = ? WHERE id = ?",
+                "UPDATE suggestions SET state = ?, updated_at = ?, snoozed_until = ?, completed_at = ? WHERE id = ?",
                 [
                     .text(state.rawValue),
-                    requiredDate(Date()),
+                    requiredDate(now),
                     optionalDate(snoozedUntil),
+                    optionalDate(state == .completed ? now : nil),
                     .text(id)
                 ]
             )
@@ -690,10 +695,13 @@ public final class MinderStore {
                 confidence REAL NOT NULL,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                snoozed_until TEXT
+                snoozed_until TEXT,
+                completed_at TEXT
             )
             """
         )
+        try ensureSuggestionSchema()
+        try cleanupSuggestionData()
 
         try database.execute(
             """
@@ -790,6 +798,32 @@ public final class MinderStore {
             definition: "TEXT NOT NULL DEFAULT 'ocean'",
             existingColumns: &columns
         )
+    }
+
+    private func ensureSuggestionSchema() throws {
+        var columns = try tableColumns("suggestions")
+        try addColumnIfMissing(
+            table: "suggestions",
+            column: "completed_at",
+            definition: "TEXT",
+            existingColumns: &columns
+        )
+    }
+
+    private func cleanupSuggestionData() throws {
+        try database.transaction {
+            try database.execute("UPDATE suggestions SET completed_at = updated_at WHERE state = 'completed' AND completed_at IS NULL")
+            try database.execute("UPDATE suggestions SET completed_at = NULL WHERE state != 'completed'")
+
+            let rows = try database.query("SELECT id, completed_at FROM suggestions WHERE completed_at IS NOT NULL")
+            for row in rows {
+                guard let id = row["id"] ?? nil else { continue }
+                let completedAt = row["completed_at"] ?? nil
+                if DateCoding.date(from: completedAt) == nil {
+                    try database.execute("UPDATE suggestions SET completed_at = NULL WHERE id = ?", [.text(id)])
+                }
+            }
+        }
     }
 
     private func ensureManualQueueItemSchema() throws {
@@ -1204,7 +1238,8 @@ private func suggestion(from row: [String: String?]) throws -> Suggestion {
         ),
         createdAt: try requiredDate(row, "created_at"),
         updatedAt: try requiredDate(row, "updated_at"),
-        snoozedUntil: DateCoding.date(from: row["snoozed_until"] ?? nil)
+        snoozedUntil: DateCoding.date(from: row["snoozed_until"] ?? nil),
+        completedAt: DateCoding.date(from: row["completed_at"] ?? nil)
     )
 }
 

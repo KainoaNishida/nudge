@@ -106,6 +106,17 @@ final class ImporterStoreTests: XCTestCase {
         let snoozed = try XCTUnwrap(try store.fetchSuggestions().first { $0.id == suggestion.id })
         XCTAssertEqual(snoozed.state, .snoozed)
         XCTAssertEqual(snoozed.snoozedUntil, snoozedUntil)
+        XCTAssertNil(snoozed.completedAt)
+
+        try store.updateSuggestionState(id: suggestion.id, state: .completed)
+        let completed = try XCTUnwrap(try store.fetchSuggestions().first { $0.id == suggestion.id })
+        XCTAssertEqual(completed.state, .completed)
+        XCTAssertNotNil(completed.completedAt)
+
+        try store.updateSuggestionState(id: suggestion.id, state: .new)
+        let restored = try XCTUnwrap(try store.fetchSuggestions().first { $0.id == suggestion.id })
+        XCTAssertEqual(restored.state, .new)
+        XCTAssertNil(restored.completedAt)
     }
 
     func testGeminiRequestBuilderAndStructuredResponseParser() throws {
@@ -560,6 +571,48 @@ final class ImporterStoreTests: XCTestCase {
         let store = try MinderStore(databaseURL: databaseURL)
         let migrated = try XCTUnwrap(try store.fetchUserProfile())
         XCTAssertEqual(migrated.appColorScheme, .ocean)
+    }
+
+    func testSuggestionMigrationBackfillsCompletedAtForLegacyCompletedRows() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("MinderCoreTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let databaseURL = directory.appendingPathComponent("test.sqlite")
+        let database = try SQLiteDatabase(url: databaseURL)
+        let completedAt = Date(timeIntervalSince1970: 1_900_000_000)
+        let activeUpdatedAt = completedAt.addingTimeInterval(-60)
+
+        try database.execute(
+            """
+            CREATE TABLE suggestions (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                state TEXT NOT NULL,
+                title TEXT NOT NULL,
+                action_text TEXT NOT NULL,
+                due_date TEXT,
+                source_id TEXT NOT NULL,
+                thread_id TEXT NOT NULL,
+                message_id TEXT NOT NULL,
+                source_app TEXT NOT NULL,
+                thread_title TEXT NOT NULL,
+                evidence_snippet TEXT NOT NULL,
+                source_timestamp TEXT NOT NULL,
+                confidence REAL NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                snoozed_until TEXT
+            )
+            """
+        )
+        try insertLegacySuggestion(database, id: "legacy-completed", state: .completed, updatedAt: completedAt)
+        try insertLegacySuggestion(database, id: "legacy-active", state: .new, updatedAt: activeUpdatedAt)
+
+        let store = try MinderStore(databaseURL: databaseURL)
+        let suggestions = try store.fetchSuggestions()
+
+        XCTAssertEqual(suggestions.first { $0.id == "legacy-completed" }?.completedAt, completedAt)
+        XCTAssertNil(suggestions.first { $0.id == "legacy-active" }?.completedAt)
     }
 
     func testPermissionHealthUpsertAndTransitionsPersist() throws {
@@ -1036,12 +1089,15 @@ final class ImporterStoreTests: XCTestCase {
         let first = try await engine.generateReportFromStoredMessages()
         let suggestion = try XCTUnwrap(first.savedSuggestions.first)
         try store.updateSuggestionState(id: suggestion.id, state: .completed)
+        let completedAt = try XCTUnwrap(try store.fetchSuggestions().first { $0.id == suggestion.id }?.completedAt)
 
         let second = try await engine.generateReportFromStoredMessages()
         let saved = try XCTUnwrap(try store.fetchSuggestions().first { $0.id == suggestion.id })
 
         XCTAssertEqual(saved.state, .completed)
+        XCTAssertEqual(saved.completedAt, completedAt)
         XCTAssertEqual(second.savedSuggestions.first?.state, .completed)
+        XCTAssertEqual(second.savedSuggestions.first?.completedAt, completedAt)
         XCTAssertEqual(second.activeSavedCount, 0)
     }
 

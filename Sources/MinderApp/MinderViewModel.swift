@@ -127,7 +127,7 @@ enum NudgeCompletedQueueItem: Identifiable {
     var updatedAt: Date {
         switch self {
         case .suggestion(let suggestion):
-            return suggestion.updatedAt
+            return suggestion.completedAt ?? suggestion.updatedAt
         case .manual(let item):
             return item.completedAt ?? item.updatedAt
         }
@@ -203,6 +203,7 @@ final class MinderViewModel: ObservableObject {
     private static let prototypeSourceKinds: Set<SourceKind> = [.appleMessages]
     static let queuePageSize = 1
     static let suggestionPreviewMessageLimit = 15
+    static let doneVisibleDuration: TimeInterval = 24 * 60 * 60
 
     init(
         store: MinderStore,
@@ -253,13 +254,11 @@ final class MinderViewModel: ObservableObject {
     }
 
     var recentCompletedSuggestions: [Suggestion] {
-        let cutoff = Date().addingTimeInterval(-48 * 60 * 60)
+        let cutoff = Date().addingTimeInterval(-Self.doneVisibleDuration)
         return suggestions
             .filter { isPrototypeSuggestion($0) }
-            .filter { $0.state == .completed && $0.updatedAt >= cutoff }
-            .sorted { $0.updatedAt > $1.updatedAt }
-            .prefix(5)
-            .map { $0 }
+            .filter { $0.state == .completed && ($0.completedAt ?? $0.updatedAt) >= cutoff }
+            .sorted { ($0.completedAt ?? $0.updatedAt) > ($1.completedAt ?? $1.updatedAt) }
     }
 
     var activeManualItems: [ManualQueueItem] {
@@ -300,15 +299,13 @@ final class MinderViewModel: ObservableObject {
     }
 
     var recentCompletedQueueItems: [NudgeCompletedQueueItem] {
-        let cutoff = Date().addingTimeInterval(-48 * 60 * 60)
+        let cutoff = Date().addingTimeInterval(-Self.doneVisibleDuration)
         let completedSuggestions = recentCompletedSuggestions.map(NudgeCompletedQueueItem.suggestion)
         let completedManualItems = manualItems
             .filter { $0.state == .completed && ($0.completedAt ?? $0.updatedAt) >= cutoff }
             .map(NudgeCompletedQueueItem.manual)
         return (completedSuggestions + completedManualItems)
             .sorted { $0.updatedAt > $1.updatedAt }
-            .prefix(5)
-            .map { $0 }
     }
 
     var appleMessagesSource: ConversationSource? {

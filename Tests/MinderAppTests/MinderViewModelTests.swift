@@ -152,6 +152,51 @@ final class MinderViewModelTests: XCTestCase {
         XCTAssertEqual(restored.state, .active)
     }
 
+    func testDoneHistoryShowsAllRecentCompletedSuggestionsWithoutCountCap() throws {
+        let store = try makeStore()
+        let saved = try store.upsertSuggestions((1...7).map { index in
+            testDraft(threadId: "thread-\(index)", messageId: "message-apple-ask-\(index)")
+        })
+        for suggestion in saved {
+            try store.updateSuggestionState(id: suggestion.id, state: .completed)
+        }
+
+        let model = makeModel(store: store)
+        model.refresh()
+
+        XCTAssertEqual(model.recentCompletedQueueItems.count, 7)
+    }
+
+    func testDoneHistoryHidesItemsCompletedMoreThanOneDayAgo() throws {
+        let store = try makeStore()
+        let now = Date()
+        for index in 1...3 {
+            try store.upsertManualQueueItem(ManualQueueItem(
+                id: "recent-\(index)",
+                kind: .note,
+                title: "Recent \(index)",
+                state: .completed,
+                createdAt: now.addingTimeInterval(-3_600),
+                updatedAt: now.addingTimeInterval(TimeInterval(-index)),
+                completedAt: now.addingTimeInterval(TimeInterval(-index))
+            ))
+        }
+        try store.upsertManualQueueItem(ManualQueueItem(
+            id: "expired",
+            kind: .note,
+            title: "Expired",
+            state: .completed,
+            createdAt: now.addingTimeInterval(-MinderViewModel.doneVisibleDuration - 3_600),
+            updatedAt: now.addingTimeInterval(-MinderViewModel.doneVisibleDuration - 60),
+            completedAt: now.addingTimeInterval(-MinderViewModel.doneVisibleDuration - 60)
+        ))
+
+        let model = makeModel(store: store)
+        model.refresh()
+
+        XCTAssertEqual(model.recentCompletedQueueItems.map(\.title), ["Recent 1", "Recent 2", "Recent 3"])
+    }
+
     func testGenerateSuggestionsRunsEvenWhenOtherWorkFlagIsActive() throws {
         let store = try makeStore()
         try saveMessagesImport(

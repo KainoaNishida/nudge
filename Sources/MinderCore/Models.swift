@@ -414,6 +414,7 @@ public struct Suggestion: Identifiable, Codable, Equatable {
     public var createdAt: Date
     public var updatedAt: Date
     public var snoozedUntil: Date?
+    public var completedAt: Date?
 
     public var confidenceLabel: String {
         if confidence >= 0.85 { return "High" }
@@ -434,7 +435,8 @@ public struct Suggestion: Identifiable, Codable, Equatable {
         evidence: Evidence,
         createdAt: Date,
         updatedAt: Date,
-        snoozedUntil: Date? = nil
+        snoozedUntil: Date? = nil,
+        completedAt: Date? = nil
     ) {
         self.id = id
         self.type = type
@@ -448,6 +450,7 @@ public struct Suggestion: Identifiable, Codable, Equatable {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.snoozedUntil = snoozedUntil
+        self.completedAt = completedAt
     }
 }
 
