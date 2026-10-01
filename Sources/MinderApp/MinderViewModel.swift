@@ -47,6 +47,7 @@ struct NudgeSuggestionCard: Identifiable {
     var suggestion: Suggestion
     var recentMessages: [Message] = []
     var messagePlatform: NudgeMessagePlatform = .unknown
+    var messagesURL: URL?
 
     var id: String {
         suggestion.id
@@ -696,13 +697,23 @@ final class MinderViewModel: ObservableObject {
         queueItems = pageItems(from: allQueueItems)
     }
 
+    func messagesURL(for suggestion: Suggestion) -> URL? {
+        guard sources.contains(where: { $0.id == suggestion.sourceId && $0.kind == .appleMessages }),
+              let thread = threads.first(where: { $0.id == suggestion.threadId && $0.sourceId == suggestion.sourceId })
+        else {
+            return nil
+        }
+        return AppleMessagesLink.url(threadExternalId: thread.externalId)
+    }
+
     private func makeSuggestionCards(from suggestions: [Suggestion]) throws -> [NudgeSuggestionCard] {
         try suggestions.map { suggestion in
             let thread = threads.first { $0.id == suggestion.threadId }
             return NudgeSuggestionCard(
                 suggestion: suggestion,
                 recentMessages: try store.fetchRecentMessages(threadId: suggestion.threadId, limit: Self.suggestionPreviewMessageLimit),
-                messagePlatform: NudgeMessagePlatform(threadExternalId: thread?.externalId)
+                messagePlatform: NudgeMessagePlatform(threadExternalId: thread?.externalId),
+                messagesURL: messagesURL(for: suggestion)
             )
         }
     }

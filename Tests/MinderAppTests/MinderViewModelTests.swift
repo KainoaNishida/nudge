@@ -4,6 +4,41 @@ import XCTest
 
 @MainActor
 final class MinderViewModelTests: XCTestCase {
+    func testMessagesLinkUsesStoredThreadAndDoesNotCompleteSuggestion() throws {
+        let store = try makeStore()
+        let source = ConversationSource(id: "apple", name: "Apple Messages", kind: .appleMessages)
+        let thread = ConversationThread(
+            id: "thread-1", sourceId: source.id, externalId: "iMessage;-;+15551234567",
+            title: "Avery", participantLabels: ["Avery"], lastMessageAt: Date()
+        )
+        _ = try store.saveImport(source: source, threads: [thread], messages: [])
+        let suggestion = try XCTUnwrap(store.upsertSuggestions([testDraft(messageId: "message-apple-ask")]).first)
+        let model = makeModel(store: store)
+        model.refresh()
+
+        let url = try XCTUnwrap(model.messagesURL(for: suggestion))
+        XCTAssertEqual(url, AppleMessagesLink.url(threadExternalId: thread.externalId))
+        XCTAssertEqual(model.suggestionCards.first?.messagesURL, url)
+        XCTAssertEqual(model.activeAlertCount, 1)
+        XCTAssertTrue(model.recentCompletedQueueItems.isEmpty)
+
+        try store.updateSuggestionState(id: suggestion.id, state: .completed)
+        model.refresh()
+        XCTAssertEqual(model.messagesURL(for: suggestion), url)
+        XCTAssertEqual(model.recentCompletedQueueItems.count, 1)
+    }
+
+    func testSampleThreadDoesNotProduceAMessagesLink() throws {
+        let store = try makeStore()
+        try saveMessagesImport(store: store, messages: [])
+        let suggestion = try XCTUnwrap(store.upsertSuggestions([testDraft(messageId: "message-apple-ask")]).first)
+        let model = makeModel(store: store)
+        model.refresh()
+
+        XCTAssertNil(model.messagesURL(for: suggestion))
+        XCTAssertNil(model.suggestionCards.first?.messagesURL)
+    }
+
     func testOpenSettingsSwitchesToSettingsTab() throws {
         let model = makeModel(store: try makeStore())
 

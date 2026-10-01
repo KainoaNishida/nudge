@@ -40,6 +40,8 @@ Messages import is read-only. Nudge copies the last 30 days of local Messages in
 - Use `Refresh` to recheck Apple Messages and regenerate alerts.
 - The `Queue` tab shows one active item at a time. Use the left and right arrow buttons to move through the queue.
 - Each alert card shows the conversation, suggested action, and recent message context.
+- Click `Open in Messages` on a conversation card or completed thread to open it in the Mac’s Messages app. Opening a conversation leaves its Done status unchanged. Sample items without an original Messages identifier have this button disabled.
+- Group conversation links use an undocumented macOS Messages route, so navigation can vary between macOS versions.
 - Click `Done` when the conversation no longer needs action.
 - The `Done` tab shows recently completed items for 48 hours and lets you undo a completion.
 - The status button in the footer opens the setting most likely to fix missing or degraded setup.

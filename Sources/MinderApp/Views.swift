@@ -162,6 +162,7 @@ struct InboxView: View {
         case .done:
             DoneHistoryView(
                 items: model.recentCompletedQueueItems,
+                messagesURL: { model.messagesURL(for: $0) },
                 undo: { model.undoCompleted($0) }
             )
         case .settings:
@@ -471,10 +472,13 @@ private struct NudgeSuggestionCardView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: 8)
-                        Text(card.suggestion.evidence.sourceTimestamp.relativeLabel)
-                            .font(.caption2)
-                            .foregroundStyle(NudgeTheme.tertiaryText)
-                            .lineLimit(1)
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text(card.suggestion.evidence.sourceTimestamp.relativeLabel)
+                                .font(.caption2)
+                                .foregroundStyle(NudgeTheme.tertiaryText)
+                                .lineLimit(1)
+                            OpenInMessagesButton(url: card.messagesURL)
+                        }
                     }
 
                     SuggestedActionStrip(text: card.suggestion.action.text, tint: tint)
@@ -492,6 +496,48 @@ private struct NudgeSuggestionCardView: View {
             )
         }
         .frame(maxWidth: NudgeQueueLayout.cardMaxWidth)
+    }
+}
+
+private struct OpenInMessagesButton: View {
+    var url: URL?
+    var compact = false
+    @State private var isOpening = false
+    @State private var openError: String?
+
+    var body: some View {
+        Button {
+            guard let url else { return }
+            isOpening = true
+            Task { @MainActor in
+                defer { isOpening = false }
+                do {
+                    try await AppleMessagesLink.open(url)
+                } catch {
+                    openError = error.localizedDescription
+                }
+            }
+        } label: {
+            if compact {
+                Image(systemName: "arrow.up.forward.message")
+                    .frame(width: 26, height: 26)
+            } else {
+                Label("Open in Messages", systemImage: "arrow.up.forward.message")
+            }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .disabled(url == nil || isOpening)
+        .accessibilityLabel("Open in Messages")
+        .help(url == nil ? "The original Messages conversation is unavailable for this item." : "Open this conversation in Messages")
+        .alert("Couldn’t Open Messages", isPresented: Binding(
+            get: { openError != nil },
+            set: { if !$0 { openError = nil } }
+        )) {
+            Button("OK", role: .cancel) { openError = nil }
+        } message: {
+            Text(openError ?? "Try opening Messages and then try again.")
+        }
     }
 }
 
@@ -643,6 +689,7 @@ private struct DoneHistoryView: View {
     @State private var openedItem: NudgeCompletedQueueItem?
 
     var items: [NudgeCompletedQueueItem]
+    var messagesURL: (Suggestion) -> URL?
     var undo: (NudgeCompletedQueueItem) -> Void
 
     var body: some View {
@@ -668,6 +715,7 @@ private struct DoneHistoryView: View {
                             ForEach(items) { item in
                                 DoneHistoryRow(
                                     item: item,
+                                    messagesURL: messagesURL,
                                     open: { openedItem = item },
                                     undo: {
                                         if openedItem?.id == item.id {
@@ -693,7 +741,7 @@ private struct DoneHistoryView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: $openedItem) { item in
-            DoneHistoryDetailView(item: item) {
+            DoneHistoryDetailView(item: item, messagesURL: messagesURL) {
                 openedItem = nil
                 undo(item)
             }
@@ -705,6 +753,7 @@ private struct DoneHistoryRow: View {
     @Environment(\.nudgePalette) private var palette
 
     var item: NudgeCompletedQueueItem
+    var messagesURL: (Suggestion) -> URL?
     var open: () -> Void
     var undo: () -> Void
 
@@ -751,6 +800,10 @@ private struct DoneHistoryRow: View {
             .buttonStyle(.plain)
             .help("Open done item")
 
+            if case .suggestion(let suggestion) = item {
+                OpenInMessagesButton(url: messagesURL(suggestion), compact: true)
+            }
+
             Button {
                 undo()
             } label: {
@@ -778,6 +831,7 @@ private struct DoneHistoryDetailView: View {
     @Environment(\.nudgePalette) private var palette
 
     var item: NudgeCompletedQueueItem
+    var messagesURL: (Suggestion) -> URL?
     var undo: () -> Void
 
     var body: some View {
@@ -823,6 +877,7 @@ private struct DoneHistoryDetailView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     switch item {
                     case .suggestion(let suggestion):
+                        OpenInMessagesButton(url: messagesURL(suggestion))
                         DetailPanel(title: "Suggested Action", systemImage: "checkmark.circle") {
                             Text(suggestion.action.text)
                                 .fixedSize(horizontal: false, vertical: true)
