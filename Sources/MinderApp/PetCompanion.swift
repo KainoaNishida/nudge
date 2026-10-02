@@ -207,6 +207,7 @@ extension NSScreen {
 
 private struct PixelCatOverlay: View {
     @ObservedObject var display: PetDisplay
+    @State private var isHovered = false
     var open: () -> Void
     var drag: (NSPoint) -> Void
     var finishDrag: () -> Void
@@ -227,6 +228,9 @@ private struct PixelCatOverlay: View {
                         .background(Color(red: 0.16, green: 0.19, blue: 0.24).opacity(0.88), in: Circle())
                 }
                 .buttonStyle(.plain)
+                .opacity(isHovered ? 1 : 0)
+                .allowsHitTesting(isHovered)
+                .accessibilityHidden(!isHovered)
                 .help("Close cat. Restore it in Nudge Settings.")
                 .accessibilityLabel("Close pixel cat")
                 if display.edge == .left { Spacer(minLength: 0) }
@@ -265,6 +269,9 @@ private struct PixelCatOverlay: View {
             .accessibilityLabel("Nudge pixel cat. Click to open Nudge; drag anywhere on screen to move.")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: display.edge == .right ? .bottomTrailing : .bottomLeading)
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
+        .onDisappear { isHovered = false }
     }
 }
 

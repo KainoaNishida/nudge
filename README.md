@@ -50,7 +50,7 @@ Messages import is read-only. Nudge copies the last 30 days of local Messages in
 - Use the power button in the header to quit Nudge.
 
 After setup, Nudge also runs a background refresh every 15 minutes while the app is open. The cat shows a generic “New updates!” bubble only when an actionable conversation is newly accepted or substantively updated. It does not show names or message text. Mac notifications are disabled while the pet is the notifier.
-The cat's X hides it until you turn **Show the pixel cat** back on in Settings; the menu bar item still opens Nudge.
+Hover over the cat to reveal its X. The X hides it until you turn **Show the pixel cat** back on in Settings; the menu bar item still opens Nudge.
 
 ### Settings and Privacy
 
