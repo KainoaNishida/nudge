@@ -15,6 +15,7 @@ public final class ManagedAssessmentCoordinator {
         guard start.consentVersion == status.consentVersion else { throw ManagedAIError.unavailable("The data-sharing disclosure changed. Review it in Settings before using managed AI.") }
         guard status.remainingUSD > 0 else { throw ManagedAPIError(code: "quota_exhausted") }
         let now = Date(), runID = UUID().uuidString
+        let cutoff = now.addingTimeInterval(-Double(start.historyWindowDays) * 86_400)
         let timeZone = TimeZone(identifier: profile.timeZoneIdentifier) ?? .current
         func checkState() throws {
             let current = try store.managedState()
@@ -46,25 +47,30 @@ public final class ManagedAssessmentCoordinator {
                         }
                     }
                     if record.snapshot.previousRecommendation == nil,
-                       let previous = legacy.filter({ $0.threadId == record.localThreadId && [.completed,.dismissed].contains($0.state) }).max(by: { $0.updatedAt < $1.updatedAt }) {
+                       let previous = legacy.filter({ $0.threadId == record.localThreadId && [.completed,.dismissed].contains($0.state) && $0.evidence.sourceTimestamp >= cutoff }).max(by: { $0.updatedAt < $1.updatedAt }) {
                         let previousContent = RecommendationContent(headline: String(previous.title.prefix(80)), why: String("Previously marked \(previous.state == .completed ? "Done" : "Not useful"): \(previous.action.text). Prior source excerpt: \(previous.evidence.snippet)".prefix(600)), nextStep: String(previous.action.text.prefix(200)), basis: .follow_through, confidence: .medium, urgency: .routine,
                             evidenceRefs: [EvidenceReference(kind: .message, id: "legacy-" + ManagedJSON.opaque(previous.evidence.messageId))], reassessAfter: nil)
                         record.snapshot.previousRecommendation = PreviousRecommendation(id: previous.id, content: previousContent)
                     }
-                    if let previous = state.recommendations.values.filter({ $0.threadId == record.snapshot.threadId }).max(by: { $0.createdAt < $1.createdAt }) {
+                    if let previous = state.recommendations.values.filter({ $0.threadId == record.snapshot.threadId &&
+                        $0.evidenceMessages.allSatisfy { $0.sentAt >= cutoff } &&
+                        $0.evidenceFacts.allSatisfy { $0.windowStart >= cutoff } &&
+                        (!$0.evidenceMessages.isEmpty || !$0.evidenceFacts.isEmpty)
+                    }).max(by: { $0.createdAt < $1.createdAt }) {
                         record.snapshot.previousRecommendation = PreviousRecommendation(id: previous.id, content: previous.content)
                     }
                     record.snapshot.feedback = Array(record.feedback.suffix(100))
                     state.threads[record.snapshot.threadId] = record
                 }
                 state.scanCursor = page.nextCursor
-                state.coverage.total = state.threads.values.filter { !$0.muted && ($0.snapshot.coverage.excerptEnd ?? .distantPast) >= now.addingTimeInterval(-180 * 86_400) }.count
-                state.coverage.detail = "Collected \(state.threads.count) conversations from history available on this Mac."
+                state.coverage.total = state.threads.values.filter { !$0.muted && ($0.snapshot.coverage.excerptEnd ?? .distantPast) >= cutoff }.count
+                state.coverage.detail = "Found \(state.coverage.total) conversations in the last \(start.historyWindowDays) days on this Mac."
                 if page.complete {
                     for id in state.threads.keys where state.threads[id]?.seenScanId != state.scanId {
+                        let lastActivity = state.threads[id]?.snapshot.coverage.excerptEnd ?? .distantPast
                         state.threads[id]?.sourcePresent = false
-                        state.threads[id]?.unresolved = "This conversation was not available in the current local scan."
-                        let cutoff = now.addingTimeInterval(-180 * 86_400)
+                        state.threads[id]?.unresolved = lastActivity >= cutoff ? "This conversation was not available in the current local scan." : nil
+                        state.threads[id]?.lastAttemptFailed = false
                         state.threads[id]?.snapshot.messages.removeAll { $0.sentAt < cutoff }
                         state.threads[id]?.dailyActivity.removeAll { $0.date < cutoff }
                         state.threads[id]?.snapshot.activityFacts.removeAll { $0.windowEnd < cutoff }
@@ -73,13 +79,13 @@ public final class ManagedAssessmentCoordinator {
                     state.scanCursor = 0; state.scanStartedAt = nil; state.coverage.scanComplete = true
                 }
             }
-            progress("Collecting conversation history: \((try store.managedState()).threads.count) threads")
+            progress("Collecting recent conversations: \((try store.managedState()).coverage.total) threads")
             await Task.yield()
             if page.complete { break }
         }
         try checkState()
         let scan = try store.managedState()
-        let eligible = scan.threads.values.filter { !$0.muted && $0.sourcePresent && ($0.snapshot.coverage.excerptEnd ?? .distantPast) >= now.addingTimeInterval(-180 * 86_400) }.sorted { $0.snapshot.threadId < $1.snapshot.threadId }
+        let eligible = scan.threads.values.filter { !$0.muted && $0.sourcePresent && ($0.snapshot.coverage.excerptEnd ?? .distantPast) >= cutoff }.sorted { $0.snapshot.threadId < $1.snapshot.threadId }
         func key(_ record: ManagedThreadRecord) -> String {
             ManagedJSON.opaque([account, String(start.goal.revision), String(start.consentVersion),record.snapshot.snapshotId,String(record.feedbackRevision),status.model,status.assessPromptVersion,"1"].joined(separator: "|"))
         }
@@ -142,13 +148,17 @@ public final class ManagedAssessmentCoordinator {
         try checkState()
         if let latestStatus = try? await service.status() { try checkState(); try store.updateManagedState { $0.status = latestStatus } }
         let staged = try store.managedState()
-        var proposed = Dictionary(uniqueKeysWithValues: staged.recommendations.values.filter { [.active,.snoozed].contains($0.state) && !(staged.threads[$0.threadId]?.muted ?? false) }.map { ($0.threadId,$0) })
+        var proposed = Dictionary(uniqueKeysWithValues: staged.recommendations.values.filter { rec in
+            guard let thread = staged.threads[rec.threadId] else { return false }
+            return [.active,.snoozed].contains(rec.state) && !thread.muted && (thread.snapshot.coverage.excerptEnd ?? .distantPast) >= cutoff
+        }.map { ($0.threadId,$0) })
         for record in staged.threads.values {
             if record.pendingNoAction { proposed.removeValue(forKey: record.snapshot.threadId) }
             if let rec = record.stagedRecommendation { proposed[record.snapshot.threadId] = rec }
         }
         let records = proposed.values.sorted { $0.id < $1.id }.map { rec in RankedRecommendation(id: rec.id, content: rec.content, evidenceSummaries: rec.evidenceText().map { String($0.prefix(240)) }, lastActivityAt: staged.threads[rec.threadId]?.snapshot.coverage.excerptEnd ?? rec.assessedAt, assessedAt: rec.assessedAt, previousOrder: staged.orderedIds.firstIndex(of: rec.id)) }
-        let changed = staged.threads.values.contains { $0.stagedRecommendation != nil || $0.pendingNoAction }
+        let changed = staged.threads.values.contains { $0.stagedRecommendation != nil || $0.pendingNoAction } ||
+            !Set(records.map(\.id)).isSubset(of: Set(staged.orderedIds))
         let ordered: [String]
         if changed {
             progress("Ranking \(records.count) recommendations")
@@ -180,13 +190,13 @@ public final class ManagedAssessmentCoordinator {
                 guard let rec = state.recommendations[id], state.threads[rec.threadId]?.sourcePresent == false else { return nil }
                 return rec.threadId
             }).count
-            let currentRecords = state.threads.values.filter { $0.sourcePresent && !$0.muted }
+            let currentRecords = state.threads.values.filter { $0.sourcePresent && !$0.muted && ($0.snapshot.coverage.excerptEnd ?? .distantPast) >= cutoff }
             state.coverage.total = currentRecords.count + missingActive
             state.coverage.failed = currentRecords.filter(\.lastAttemptFailed).count + missingActive
             state.coverage.unresolved = currentRecords.filter { !$0.lastAttemptFailed && $0.unresolved != nil }.count
             state.coverage.reviewed = currentRecords.filter { !$0.lastAttemptFailed && ($0.assessment != nil || !ManagedLifecycle.eligible($0, now: now)) }.count
             if state.coverage.isComplete { state.coverage.lastSuccessAt = now }
-            state.coverage.detail = state.coverage.isComplete ? "Reviewed \(state.coverage.total) conversations on this Mac." : "Reviewed \(state.coverage.reviewed) of \(state.coverage.total); \(state.coverage.unresolved) uncertain, \(state.coverage.failed) failed or pending. Previous recommendations are retained."
+            state.coverage.detail = state.coverage.isComplete ? "Reviewed \(state.coverage.total) conversations from the last \(start.historyWindowDays) days on this Mac." : "Reviewed \(state.coverage.reviewed) of \(state.coverage.total) conversations from the last \(start.historyWindowDays) days; \(state.coverage.unresolved) uncertain, \(state.coverage.failed) failed or pending. Previous recommendations are retained."
             if let failure = currentRecords.filter({ $0.lastAttemptFailed }).compactMap(\.unresolved).sorted().first {
                 state.coverage.detail += " " + failure
             }

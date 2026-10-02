@@ -869,7 +869,7 @@ final class MinderViewModel: ObservableObject {
                 guard let configuration = ManagedServiceConfiguration.configured() else { throw ManagedAIError.unavailable("This build has no managed service configured. Add the development or alpha project configuration before signing in.") }
                 let state = try self.store.managedState()
                 let client = ManagedAIClient(configuration: configuration, consentVersion: state.consentVersion)
-                let coordinator = ManagedAssessmentCoordinator(store: self.store, service: client, collector: ManagedMessagesCollector(contactResolver: MacContactResolver()))
+                let coordinator = ManagedAssessmentCoordinator(store: self.store, service: client, collector: ManagedMessagesCollector(contactResolver: MacContactResolver(), historyWindowDays: state.historyWindowDays))
                 try await coordinator.refresh(profile: self.profile ?? UserProfile(displayName: NSFullUserName()), bypassFailureBackoff: reason == .manual) {
                     self.statusMessage = $0
                     if let state = try? self.store.managedState() { self.managedState = state }

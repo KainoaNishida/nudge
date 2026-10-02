@@ -15,14 +15,16 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
     private static let initialMessageLimit = 8
     private let databaseURL: URL
     private let contactResolver: ContactResolving
-    public init(databaseURL: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Messages/chat.db"), contactResolver: ContactResolving = NoOpContactResolver()) {
+    private let historyWindowDays: Int
+    public init(databaseURL: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Messages/chat.db"), contactResolver: ContactResolving = NoOpContactResolver(), historyWindowDays: Int = ManagedLocalState.defaultHistoryWindowDays) {
         self.databaseURL = databaseURL; self.contactResolver = contactResolver
+        self.historyWindowDays = min(ManagedLocalState.allowedHistoryWindowDays.upperBound, max(ManagedLocalState.allowedHistoryWindowDays.lowerBound, historyWindowDays))
     }
     public func page(after cursor: Int, now: Date, timeZone: TimeZone) throws -> ManagedScanPage {
         let validation = try AppleMessagesSchemaValidator.validate(databaseURL: databaseURL)
         guard validation.isCompatible else { throw AppleMessagesImportError.incompatibleSchema(validation.missingItems) }
         let db = try SQLiteReadOnlyDatabase(url: databaseURL)
-        let cutoff = now.addingTimeInterval(-180 * 86_400)
+        let cutoff = now.addingTimeInterval(-Double(historyWindowDays) * 86_400)
         let rows = try db.query("""
             SELECT chat.ROWID AS chat_id, chat.guid, chat.display_name FROM chat
             WHERE chat.ROWID > ? AND EXISTS (SELECT 1 FROM chat_message_join j JOIN message m ON m.ROWID=j.message_id
@@ -33,7 +35,7 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
             guard let chat = row["chat_id"] ?? nil, let chatID = Int(chat), let guid = row["guid"] ?? nil else { throw ManagedAIError.unavailable("Unsupported Messages conversation metadata; analysis remains incomplete.") }
             let cols = try db.tableColumns("message")
             let event = "(coalesce(" + (cols.contains("associated_message_type") ? "m.associated_message_type" : "0") + ",0) + coalesce(" + (cols.contains("item_type") ? "m.item_type" : "0") + ",0))"
-            // Page metadata, never bodies, for six months. No global message cap.
+            // Page metadata, never bodies, for the selected local history window.
             var metadata: [(Date, Bool, Bool)] = []; var messageCursor = 0
             while true {
                 let page = try db.query("""
@@ -63,7 +65,7 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
             let rawTitle = (row["display_name"] ?? nil) ?? ""
             let title = !rawTitle.isEmpty && !ContactHandleNormalizer.looksLikeRawHandle(rawTitle) ? rawTitle : participants.filter { !$0.isLocalUser }.map(\.displayName).joined(separator: ", ")
             var snapshot = ThreadSnapshot(threadId: id, snapshotId: "", title: title.isEmpty ? "Conversation" : String(title.prefix(200)), kind: guid.contains(";+;") ? .group : (guid.contains(";-;") ? .direct : .unknown), participants: participants, messages: messages,
-                activityFacts: Self.activityFacts(metadata: metadata, start: start, now: now, timeZone: timeZone),
+                activityFacts: Self.activityFacts(metadata: metadata, start: start, now: now, timeZone: timeZone, historyWindowDays: historyWindowDays),
                 coverage: ContextCoverage(scanComplete: true, observationStart: start, observationEnd: now, excerptStart: messages.first?.sentAt, excerptEnd: messages.last?.sentAt, moreContextAvailable: metadata.count > messages.count), previousRecommendation: nil, feedback: [], contextPass: .initial)
             if let last = try context(db: db, chatID: chatID, cutoff: cutoff, limit: 1, substantiveOnly: true).first {
                 snapshot.activityFacts.append(ActivityFact(id: "activity-substantive-revision", metric: "lastSubstantiveMessage", value: ManagedJSON.opaque(last.id + last.body), windowStart: start, windowEnd: now))
@@ -92,7 +94,7 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
         guard record.snapshot.contextPass == .initial else { throw ManagedAIError.invalidResponse }
         let db = try SQLiteReadOnlyDatabase(url: databaseURL)
         guard let row = try db.query("SELECT ROWID AS id FROM chat WHERE guid=?", [.text(record.externalId)]).first, let chatID = Int((row["id"] ?? nil) ?? "") else { throw ManagedAIError.invalidResponse }
-        let cutoff = now.addingTimeInterval(-180 * 86_400)
+        let cutoff = record.snapshot.coverage.observationStart
         let latest = try context(db: db, chatID: chatID, cutoff: cutoff, limit: 80)
         // Preserve initial excerpt; reserve space for prior recommendation evidence and nearby replies.
         var selected = record.snapshot.messages
@@ -145,7 +147,7 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
             return ContextMessage(id: ManagedJSON.opaque("message:" + ((row["guid"] ?? nil) ?? (row["id"] ?? nil) ?? "")), senderId: outgoing ? "local-user" : ManagedJSON.opaque("sender:" + sender), sentAt: AppleMessagesDateCodec.date(fromMessageDateValue: date), isFromUser: outgoing, body: ManagedJSON.boundedBody(body), readState: outgoing ? .unknown : (rawRead == "1" ? .read : (rawRead == "0" ? .unread : .unknown)), eventKind: ((row["item"] ?? nil) ?? "0") != "0" ? .system : (((row["event"] ?? nil) ?? "0") != "0" ? .reaction : .message), contentAvailability: decoded != nil ? .available : ((row["attachment"] ?? nil) == "1" ? .attachmentOnly : .unavailable), truncated: body.utf8.count > 2_000)
         }
     }
-    static func activityFacts(metadata: [(Date, Bool, Bool)], start: Date, now: Date, timeZone: TimeZone) -> [ActivityFact] {
+    static func activityFacts(metadata: [(Date, Bool, Bool)], start: Date, now: Date, timeZone: TimeZone, historyWindowDays: Int = ManagedLocalState.defaultHistoryWindowDays) -> [ActivityFact] {
         var calendar = Calendar(identifier: .gregorian); calendar.timeZone = timeZone
         let substantive = metadata.filter { !$0.2 && $0.0 <= now }
         var facts: [ActivityFact] = []
@@ -153,14 +155,17 @@ public final class ManagedMessagesCollector: ThreadContextCollecting {
         for (name, items) in [("lastIncoming", substantive.filter { !$0.1 }), ("lastOutgoing", substantive.filter { $0.1 }), ("lastActivity", substantive)] {
             if let date = items.map({ $0.0 }).max() { add(name, ISO8601DateFormatter().string(from: date), start) }
         }
-        for days in [7,30,180] {
+        for days in [7,30].filter({ $0 <= historyWindowDays }) {
             let from = max(start, calendar.date(byAdding: .day, value: -days, to: now)!)
             let items = substantive.filter { $0.0 >= from }
             add("incoming\(days)d", String(items.filter { !$0.1 }.count), from)
             add("outgoing\(days)d", String(items.filter { $0.1 }.count), from)
             add("activeDays\(days)d", String(Set(items.map { calendar.startOfDay(for: $0.0) }).count), from)
         }
-        for week in 0..<26 {
+        add("incomingWindow", String(substantive.filter { !$0.1 }.count), start)
+        add("outgoingWindow", String(substantive.filter { $0.1 }.count), start)
+        add("activeDaysWindow", String(Set(substantive.map { calendar.startOfDay(for: $0.0) }).count), start)
+        for week in 0..<((historyWindowDays + 6) / 7) {
             let end = calendar.date(byAdding: .day, value: -7 * week, to: now)!
             let from = max(start, calendar.date(byAdding: .day, value: -7, to: end)!)
             if from >= end { continue }

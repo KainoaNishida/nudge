@@ -5,11 +5,11 @@ The managed pipeline is implemented behind an explicit mode/consent choice on th
 ## Code map
 
 - `Sources/MinderCore/ManagedAIModels.swift`: provider-independent Codable protocol, validation, and bounded text.
-- `ManagedMessagesCollector.swift`: read-only per-thread collection, six-month metadata scan, daily statistics, read state, and 8/80-message context.
+- `ManagedMessagesCollector.swift`: read-only per-thread collection, a user-selected 7–180-day metadata scan (50 days by default), daily statistics, read state, and 8/80-message context.
 - `ManagedAIStore.swift`: local goals, snapshots, assessments, staged/visible recommendations, feedback, snoozes, mutes, and notification state. Managed state has its own SQLite table; legacy Suggestions and action history remain intact.
 - `ManagedAssessmentCoordinator.swift`: resumable scan checkpoints, cache invalidation, one expansion, staging, bounded ranking/merge, and stale-result checks.
 
-The running Mac app scans local Messages every 15 minutes. A scan alone does not call Gemini for every conversation: changed snapshots, expired assessments, and eligible retries enter the cloud queue. Initial excerpts now contain at most eight messages; one requested expansion remains capped at 80. Assessment batches contain at most four threads. Unchanged `no_action` assessments expire after seven days, while a failed attempted batch waits six hours before another automatic try. Manual Refresh can retry sooner. These limits reduce cost but do not remove the server's $5 per-user monthly cap.
+The running Mac app scans local Messages every 15 minutes within the selected history window. A scan alone does not call Gemini for every conversation: changed snapshots, expired assessments, and eligible retries enter the cloud queue. Initial excerpts contain at most eight messages; one requested expansion remains capped at 80 within the same window. Assessment batches contain at most four threads. Unchanged `no_action` assessments expire after seven days, while a failed attempted batch waits six hours before another automatic try. Manual Refresh can retry sooner. These limits reduce cost but do not remove the server's $5 per-user monthly cap.
 - `ManagedAIClient.swift`: OTP Auth REST client, Keychain sessions, bearer transport, and one retry for a typed transient failure (fresh provider retries are separately charged).
 - `Sources/MinderApp/ManagedAISettings.swift`: optional goal, invited sign-in, versioned consent, account deletion, and unmute controls.
 - `supabase/functions/nudge-ai`: Edge Function, shared contract, generated TypeScript DTOs, versioned prompts, and Gemini adapter.

@@ -4,6 +4,7 @@ import MinderCore
 @MainActor
 final class ManagedAISettingsModel: ObservableObject {
     @Published var goalText = ""
+    @Published var historyDays = ManagedLocalState.defaultHistoryWindowDays
     @Published var email = ""
     @Published var code = ""
     @Published var consent = false
@@ -15,11 +16,15 @@ final class ManagedAISettingsModel: ObservableObject {
     init(store: MinderStore, onChange: @escaping @MainActor () -> Void) { self.store = store; self.onChange = onChange; reload() }
     var configured: Bool { ManagedServiceConfiguration.configured() != nil }
     func reload() {
-        do { state = try store.managedState(); goalText = state.goal.text; consent = state.consentVersion == 1 }
+        do { state = try store.managedState(); goalText = state.goal.text; historyDays = state.historyWindowDays; consent = state.consentVersion == 1 }
         catch { message = error.localizedDescription }
     }
     func saveGoal() {
         do { try store.saveGoal(goalText); reload(); message = "Goal saved. Nudge will reassess your conversations."; onChange() }
+        catch { message = error.localizedDescription }
+    }
+    func saveHistoryWindow() {
+        do { try store.saveHistoryWindowDays(historyDays); reload(); message = "History window saved. Refresh to reassess recent conversations."; onChange() }
         catch { message = error.localizedDescription }
     }
     func localOnly() {
@@ -41,7 +46,10 @@ final class ManagedAISettingsModel: ObservableObject {
             let status = try await client.status()
             guard status.access else { try await client.signOut(); throw ManagedAIError.unavailable("This account does not have an alpha invitation.") }
             try self.store.updateManagedState { state in
-                if let previous = state.cacheAccountId ?? state.accountId, previous != id { let goal = state.goal; state = ManagedLocalState(); state.goal = goal }
+                if let previous = state.cacheAccountId ?? state.accountId, previous != id {
+                    let goal = state.goal, historyDays = state.historyWindowDays
+                    state = ManagedLocalState(); state.goal = goal; state.historyWindowDays = historyDays
+                }
                 state.accountId = id; state.cacheAccountId = id; state.revision += 1; state.status = status
             }
             self.code = ""; self.message = "Signed in. Review the disclosure and enable managed AI."; self.reload(); self.onChange()
@@ -78,6 +86,23 @@ struct ManagedAISettingsView: View {
     @ObservedObject var model: ManagedAISettingsModel
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Text("Messages history for AI").font(.headline)
+            Text("Nudge checks conversations active within this many days. A shorter window sends fewer conversations to Gemini, but may miss older follow-ups.")
+                .font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text("Last")
+                TextField("Days", value: $model.historyDays, format: .number)
+                    .textFieldStyle(.roundedBorder).frame(width: 68)
+                Text("days")
+                Stepper("History window", value: $model.historyDays, in: ManagedLocalState.allowedHistoryWindowDays)
+                    .labelsHidden()
+                Spacer()
+                Button("Save history window") { model.saveHistoryWindow() }
+                    .disabled(!ManagedLocalState.allowedHistoryWindowDays.contains(model.historyDays) || model.historyDays == model.state.historyWindowDays)
+            }
+            Text("Choose 7–180 days; the default is 50. Saving hides older AI queue items immediately. Refresh applies the new window to analysis. Done history stays available.")
+                .font(.caption).foregroundStyle(.secondary)
+            Divider()
             Text("What would you like Nudge to help with?").font(.headline)
             Text("Optional. Your goal guides priorities while clear obligations still receive attention.").font(.caption).foregroundStyle(.secondary)
             TextEditor(text: $model.goalText).font(.body).frame(minHeight: 72, maxHeight: 110).border(Color.secondary.opacity(0.25))
@@ -116,7 +141,7 @@ struct ManagedAISettingsView: View {
                     Button("Delete managed account", role: .destructive) { model.deleteAccount() }
                 }.disabled(model.working)
             }
-            Text("Managed AI sends your goal, contact display names, up to 20 recent messages per conversation (up to 80 if more context is needed), local activity statistics, and conversation feedback through Nudge's backend to paid Gemini. Message text may contain personal information. Attachments and Messages routing identifiers stay on this Mac. Nudge's backend keeps access and usage metadata, but does not store messages, goals, or explanations. Gemini requests disable stored interaction objects; provider operational retention may still apply.")
+            Text("Managed AI sends your goal, contact display names, up to 8 recent messages per conversation within your chosen history window (up to 80 total if more context is needed), local activity statistics, and conversation feedback through Nudge's backend to paid Gemini. Message text may contain personal information. Attachments and Messages routing identifiers stay on this Mac. Nudge's backend keeps access and usage metadata, but does not store messages, goals, or explanations. Gemini requests disable stored interaction objects; provider operational retention may still apply.")
                 .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Toggle("I agree to this managed AI data flow (version 1)", isOn: $model.consent)
             Button(model.state.mode == .managed ? "Managed AI enabled" : "Enable managed AI") { model.enableManaged() }

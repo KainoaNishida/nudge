@@ -10,6 +10,7 @@ enum PetEdge: String, Codable, CaseIterable {
 struct PetOptions: Codable, Equatable {
     var enabled = true
     var edge: PetEdge = .right
+    var horizontalFraction: Double?
     var verticalFraction = 0.28
     var displayID: UInt32?
     var hiddenUntil: Date?
@@ -35,11 +36,13 @@ final class PetSettings: ObservableObject {
     func update(_ change: (inout PetOptions) -> Void) {
         var next = options
         change(&next)
-        next.verticalFraction = min(0.9, max(0.1, next.verticalFraction))
+        if let fraction = next.horizontalFraction { next.horizontalFraction = min(1, max(0, fraction)) }
+        next.verticalFraction = min(1, max(0, next.verticalFraction))
         options = next
     }
 
     func hideForOneHour() { update { $0.hiddenUntil = Date().addingTimeInterval(3_600) } }
+    func close() { update { $0.enabled = false } }
     func resume() { update { $0.hiddenUntil = nil; $0.pausedForScreenSharing = false } }
 
     var isVisibleNow: Bool {
@@ -60,10 +63,10 @@ final class PetWindowController {
     private let panel: NSPanel
     private let openQueue: () -> Void
     private let openSettings: () -> Void
-    private var dragOrigin: NSPoint?
+    private var dragStart: (mouse: NSPoint, origin: NSPoint)?
     private var attentionTimer: Timer?
-    private static let catSize = NSSize(width: 72, height: 72)
-    private static let alertSize = NSSize(width: 164, height: 102)
+    private static let catSize = NSSize(width: 76, height: 84)
+    private static let alertSize = NSSize(width: 166, height: 112)
 
     init(settings: PetSettings, openQueue: @escaping () -> Void, openSettings: @escaping () -> Void) {
         self.settings = settings
@@ -82,8 +85,9 @@ final class PetWindowController {
         panel.contentView = NSHostingView(rootView: PixelCatOverlay(
             display: display,
             open: { [weak self] in self?.openFromPet() },
-            drag: { [weak self] translation in self?.drag(translation) },
+            drag: { [weak self] mouse in self?.drag(mouse) },
             finishDrag: { [weak self] in self?.finishDrag() },
+            close: { [weak self] in self?.settings.close() },
             hide: { [weak self] in self?.settings.hideForOneHour() },
             pause: { [weak self] in self?.settings.update { $0.pausedForScreenSharing = true } },
             settings: { [weak self] in self?.openSettings() }
@@ -93,6 +97,7 @@ final class PetWindowController {
 
     func refresh() {
         guard settings.isVisibleNow else { panel.orderOut(nil); return }
+        if dragStart != nil { return }
         display.edge = settings.options.edge
         place(on: selectedScreen(), animated: false)
         if !panel.isVisible { panel.orderFrontRegardless() }
@@ -132,29 +137,42 @@ final class PetWindowController {
         guard let screen else { return }
         let area = screen.visibleFrame
         let size = display.alerting ? Self.alertSize : Self.catSize
-        let x = settings.options.edge == .right ? area.maxX - size.width - 12 : area.minX + 12
-        let y = area.minY + (area.height - Self.catSize.height) * settings.options.verticalFraction
+        let idleX: CGFloat
+        if let fraction = settings.options.horizontalFraction {
+            idleX = area.minX + max(0, area.width - Self.catSize.width) * fraction
+        } else {
+            idleX = settings.options.edge == .right ? area.maxX - Self.catSize.width - 12 : area.minX + 12
+        }
+        let preferredX = display.alerting && settings.options.edge == .right ? idleX - (size.width - Self.catSize.width) : idleX
+        let x = min(max(preferredX, area.minX), max(area.minX, area.maxX - size.width))
+        let preferredY = area.minY + max(0, area.height - Self.catSize.height) * settings.options.verticalFraction
+        let y = min(max(preferredY, area.minY), max(area.minY, area.maxY - size.height))
         let frame = NSRect(x: x, y: y, width: size.width, height: size.height)
         panel.setFrame(frame, display: true, animate: animated)
     }
 
-    private func drag(_ translation: CGSize) {
-        if dragOrigin == nil { dragOrigin = panel.frame.origin }
-        guard let dragOrigin else { return }
-        panel.setFrameOrigin(NSPoint(x: dragOrigin.x + translation.width, y: dragOrigin.y - translation.height))
+    private func drag(_ mouse: NSPoint) {
+        if dragStart == nil { dragStart = (mouse: mouse, origin: panel.frame.origin) }
+        guard let dragStart else { return }
+        panel.setFrameOrigin(NSPoint(x: dragStart.origin.x + mouse.x - dragStart.mouse.x,
+                                     y: dragStart.origin.y + mouse.y - dragStart.mouse.y))
     }
 
     private func finishDrag() {
-        dragOrigin = nil
-        let center = NSPoint(x: panel.frame.midX, y: panel.frame.midY)
+        guard dragStart != nil else { return }
+        dragStart = nil
+        let catX = display.alerting && display.edge == .right ? panel.frame.maxX - Self.catSize.width : panel.frame.minX
+        let center = NSPoint(x: catX + Self.catSize.width / 2, y: panel.frame.minY + Self.catSize.height / 2)
         let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? selectedScreen()
         guard let screen else { return }
         let area = screen.visibleFrame
         let edge: PetEdge = center.x < area.midX ? .left : .right
-        let fraction = (panel.frame.minY - area.minY) / max(1, area.height - Self.catSize.height)
+        let horizontalFraction = (catX - area.minX) / max(1, area.width - Self.catSize.width)
+        let verticalFraction = (panel.frame.minY - area.minY) / max(1, area.height - Self.catSize.height)
         settings.update {
             $0.edge = edge
-            $0.verticalFraction = fraction
+            $0.horizontalFraction = horizontalFraction
+            $0.verticalFraction = verticalFraction
             $0.displayID = screen.nudgeDisplayID
         }
         refresh()
@@ -170,14 +188,30 @@ extension NSScreen {
 private struct PixelCatOverlay: View {
     @ObservedObject var display: PetDisplay
     var open: () -> Void
-    var drag: (CGSize) -> Void
+    var drag: (NSPoint) -> Void
     var finishDrag: () -> Void
+    var close: () -> Void
     var hide: () -> Void
     var pause: () -> Void
     var settings: () -> Void
 
     var body: some View {
-        VStack(alignment: display.edge == .right ? .trailing : .leading, spacing: 2) {
+        VStack(alignment: display.edge == .right ? .trailing : .leading, spacing: 0) {
+            HStack {
+                if display.edge == .right { Spacer(minLength: 0) }
+                Button(action: close) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(Color(red: 0.16, green: 0.19, blue: 0.24).opacity(0.88), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Close cat. Restore it in Nudge Settings.")
+                .accessibilityLabel("Close pixel cat")
+                if display.edge == .left { Spacer(minLength: 0) }
+            }
+            .frame(height: 22)
             if display.alerting {
                 Text("New updates!")
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
@@ -187,15 +221,18 @@ private struct PixelCatOverlay: View {
                     .background(Color(red: 0.16, green: 0.19, blue: 0.24), in: RoundedRectangle(cornerRadius: 5))
                     .accessibilityLabel("Nudge has new updates")
             }
-            TimelineView(.periodic(from: .now, by: 0.35)) { timeline in
+            Spacer(minLength: 0)
+            TimelineView(.periodic(from: .now, by: 0.25)) { timeline in
+                let tick = Int(timeline.date.timeIntervalSinceReferenceDate * 4)
                 PixelCatSprite(alerting: display.alerting,
-                               alternate: Int(timeline.date.timeIntervalSinceReferenceDate * 3) % 2 == 0)
-                    .frame(width: 64, height: 64)
+                               alternate: tick % 4 < 2,
+                               blink: !display.alerting && tick % 28 == 0)
+                    .frame(width: 60, height: 60)
             }
-            .frame(width: 72, height: 72)
+            .frame(width: 64, height: 62)
             .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 5)
-                .onChanged { drag($0.translation) }
+            .gesture(DragGesture(minimumDistance: 3)
+                .onChanged { _ in drag(NSEvent.mouseLocation) }
                 .onEnded { _ in finishDrag() })
             .onTapGesture(perform: open)
             .contextMenu {
@@ -203,8 +240,9 @@ private struct PixelCatOverlay: View {
                 Button("Hide for one hour", action: hide)
                 Button("Pause for screen sharing", action: pause)
                 Button("Pet settings", action: settings)
+                Button("Close cat", action: close)
             }
-            .accessibilityLabel("Nudge pixel cat. Click to open Nudge; drag to move.")
+            .accessibilityLabel("Nudge pixel cat. Click to open Nudge; drag anywhere on screen to move.")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: display.edge == .right ? .bottomTrailing : .bottomLeading)
     }
@@ -213,6 +251,7 @@ private struct PixelCatOverlay: View {
 private struct PixelCatSprite: View {
     var alerting: Bool
     var alternate: Bool
+    var blink: Bool
 
     private struct Block {
         var x: Int; var y: Int; var width: Int; var height: Int; var color: Color
@@ -223,7 +262,7 @@ private struct PixelCatSprite: View {
 
     var body: some View {
         Canvas { context, size in
-            let cell = min(size.width, size.height) / 16
+            let cell = min(size.width, size.height) / 24
             for block in blocks {
                 context.fill(Path(CGRect(x: CGFloat(block.x) * cell, y: CGFloat(block.y) * cell,
                                          width: CGFloat(block.width) * cell, height: CGFloat(block.height) * cell)),
@@ -234,27 +273,56 @@ private struct PixelCatSprite: View {
     }
 
     private var blocks: [Block] {
-        let ink = Color(red: 0.19, green: 0.22, blue: 0.25)
-        let fur = Color(red: 0.93, green: 0.72, blue: 0.45)
-        let light = Color(red: 1.0, green: 0.89, blue: 0.69)
-        let pink = Color(red: 0.96, green: 0.53, blue: 0.54)
-        let spark = Color(red: 1.0, green: 0.83, blue: 0.23)
+        let ink = Color(red: 0.20, green: 0.18, blue: 0.23)
+        let fur = Color(red: 0.93, green: 0.57, blue: 0.31)
+        let shade = Color(red: 0.71, green: 0.36, blue: 0.25)
+        let light = Color(red: 1.00, green: 0.84, blue: 0.60)
+        let cream = Color(red: 1.00, green: 0.94, blue: 0.78)
+        let pink = Color(red: 0.96, green: 0.53, blue: 0.58)
+        let spark = Color(red: 1.00, green: 0.83, blue: 0.30)
         var result = [
-            Block(12, 9, 2, 2, ink), Block(13, 7, 2, 3, ink),
-            Block(13, 8, 1, 2, fur),
-            Block(4, 9, 8, 6, ink), Block(5, 10, 6, 4, fur),
-            Block(4, 14, 3, 1, ink), Block(9, 14, 3, 1, ink),
-            Block(3, 1, 3, 4, ink), Block(10, 1, 3, 4, ink),
-            Block(4, 2, 1, 2, pink), Block(11, 2, 1, 2, pink),
-            Block(2, 4, 12, 7, ink), Block(3, 5, 10, 5, fur),
-            Block(4, 9, 8, 1, light), Block(7, 8, 2, 2, light),
-            Block(8, 8, 1, 1, pink)
+            // A small grounded silhouette, a curled tail, and a cream chest.
+            Block(4, 23, 17, 1, ink.opacity(0.18)),
+            Block(18, 15, 4, 7, ink), Block(19, 16, 4, 5, shade),
+            Block(20, 17, 3, 3, fur), Block(21, 18, 2, 1, light),
+            Block(5, 14, 15, 9, ink), Block(6, 15, 13, 7, fur),
+            Block(7, 17, 3, 4, shade), Block(9, 16, 7, 6, light),
+            Block(10, 17, 5, 4, cream),
+            Block(5, 21, 6, 2, ink), Block(6, 21, 4, 1, cream),
+            Block(14, 21, 6, 2, ink), Block(15, 21, 4, 1, cream),
+            // Pointed ears with visible pink interiors.
+            Block(3, 2, 6, 7, ink), Block(15, 2, 6, 7, ink),
+            Block(4, 3, 4, 6, fur), Block(16, 3, 4, 6, fur),
+            Block(5, 4, 2, 4, pink), Block(17, 4, 2, 4, pink),
+            Block(5, 3, 2, 1, light), Block(17, 3, 2, 1, light),
+            // Rounded tabby face and slightly tufted cheeks.
+            Block(3, 7, 18, 10, ink), Block(2, 11, 3, 5, ink), Block(19, 11, 3, 5, ink),
+            Block(4, 8, 16, 8, fur), Block(3, 12, 3, 3, fur), Block(18, 12, 3, 3, fur),
+            Block(7, 8, 3, 2, light), Block(14, 8, 3, 2, light),
+            Block(10, 8, 1, 3, shade), Block(13, 8, 1, 3, shade),
+            Block(5, 11, 2, 2, light), Block(17, 11, 2, 2, light),
+            Block(8, 13, 8, 3, cream), Block(9, 12, 2, 3, light), Block(13, 12, 2, 3, light),
+            Block(11, 13, 2, 1, pink), Block(11, 14, 1, 1, ink), Block(13, 14, 1, 1, ink),
+            Block(3, 13, 4, 1, ink), Block(17, 13, 4, 1, ink),
+            Block(6, 14, 1, 1, pink), Block(17, 14, 1, 1, pink)
         ]
-        if alerting && alternate {
-            result += [Block(5, 7, 2, 1, ink), Block(10, 7, 2, 1, ink),
-                       Block(14, 3, 1, 3, spark), Block(14, 7, 1, 1, spark)]
+        if blink {
+            result += [Block(7, 11, 3, 1, ink), Block(14, 11, 3, 1, ink)]
         } else {
-            result += [Block(5, 6, 2, 2, ink), Block(10, 6, 2, 2, ink)]
+            result += [Block(7, 10, 3, 3, ink), Block(14, 10, 3, 3, ink),
+                       Block(8, 10, 1, 1, cream), Block(15, 10, 1, 1, cream)]
+        }
+        if alternate {
+            result += [Block(21, 14, 2, 2, ink), Block(21, 15, 1, 1, light)]
+        } else {
+            result += [Block(20, 13, 2, 2, ink), Block(20, 14, 1, 1, light)]
+        }
+        if alerting {
+            result += [Block(1, 5, 1, 3, spark), Block(0, 6, 3, 1, spark),
+                       Block(22, 5, 1, 3, spark), Block(21, 6, 3, 1, spark)]
+            if alternate {
+                result += [Block(16, 18, 4, 3, ink), Block(17, 18, 3, 2, cream)]
+            }
         }
         return result
     }
@@ -269,7 +337,7 @@ struct PetSettingsView: View {
                 get: { settings.options.enabled },
                 set: { enabled in settings.update { $0.enabled = enabled } }
             ))
-            Text("The cat appears on normal desktop Spaces. It reacts only when an actionable conversation is added or substantively updated.")
+            Text("The cat can sit anywhere on a screen, including full-screen Spaces. It reacts only when an actionable conversation is added or substantively updated.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
                 Picker("Screen", selection: Binding(
@@ -286,12 +354,12 @@ struct PetSettingsView: View {
                 }
                 Picker("Edge", selection: Binding(
                     get: { settings.options.edge },
-                    set: { edge in settings.update { $0.edge = edge } }
+                    set: { edge in settings.update { $0.edge = edge; $0.horizontalFraction = nil } }
                 )) {
                     ForEach(PetEdge.allCases, id: \.self) { edge in Text(edge.label).tag(edge) }
                 }
             }
-            Text("Drag the cat to move it. It snaps to the nearest edge and remembers the screen.")
+            Text("Drag the cat anywhere on a screen; it stays where you leave it. Choosing an edge moves it back to that edge.")
                 .font(.caption).foregroundStyle(.secondary)
             HStack {
                 Button("Hide for one hour") { settings.hideForOneHour() }
@@ -301,7 +369,7 @@ struct PetSettingsView: View {
                 ))
                 Button("Show now") { settings.resume() }
             }
-            Text("The screen-sharing pause is a manual switch. The cat has no sound and never shows names or message text.")
+            Text("The X closes the cat until you turn on Show the pixel cat here. Screen-sharing pause is manual. The cat has no sound and never shows names or message text.")
                 .font(.caption).foregroundStyle(.secondary)
         }
     }

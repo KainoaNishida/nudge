@@ -13,7 +13,7 @@ The managed implementation, verification commands, and remaining deployment inpu
 
 ## Using Nudge
 
-Nudge runs as a menu bar app with a tiny pixel cat on the desktop. Click either the cat or the menu bar item to open the movable queue window. The cat sits at a screen edge and can appear over other apps' full-screen Spaces.
+Nudge runs as a menu bar app with a tiny pixel cat on the desktop. Click either the cat or the menu bar item to open the movable queue window. Drag the cat anywhere on a screen; it can also appear over other apps' full-screen Spaces.
 
 For realistic first-run behavior, use the packaged development app instead of `swift run`:
 
@@ -50,12 +50,13 @@ Messages import is read-only. Nudge copies the last 30 days of local Messages in
 - Use the power button in the header to quit Nudge.
 
 After setup, Nudge also runs a background refresh every 15 minutes while the app is open. The cat shows a generic “New updates!” bubble only when an actionable conversation is newly accepted or substantively updated. It does not show names or message text. Mac notifications are disabled while the pet is the notifier.
+The cat's X hides it until you turn **Show the pixel cat** back on in Settings; the menu bar item still opens Nudge.
 
 ### Settings and Privacy
 
 - `Status` summarizes whether Messages import and core permissions are healthy.
 - `Messages` manages Full Disk Access, recent import, and optional Contacts access.
-- `Pixel cat` controls visibility, screen, edge, manual screen-sharing pause, a one-hour hide, cadence, and quiet hours. Dragging the cat moves it and snaps it to an edge.
+- `Pixel cat` controls visibility, screen, optional edge placement, manual screen-sharing pause, a one-hour hide, cadence, and quiet hours. Dragging the cat moves it freely and saves its position.
 - `AI` offers local-only compatibility mode and invited managed AI with an optional goal, email-code sign-in, and explicit data-sharing consent.
 - `Theme` changes the accent color used by the queue and setup screens.
 - `Privacy` can delete generated suggestions, imported Messages cache, or all local Nudge data.
@@ -105,7 +106,7 @@ Without signing/notary environment variables, the script still builds `.build/Nu
 
 First launch opens a setup window for the user profile and core permission health. The current SwiftPM build performs best-effort checks for:
 
-- Full Disk Access / Apple Messages: validated by attempting to read `~/Library/Messages/chat.db`; import is read-only. Managed AI scans six months of local activity and sends a bounded recent excerpt per thread; local-only compatibility retains its earlier heuristics.
+- Full Disk Access / Apple Messages: validated by attempting to read `~/Library/Messages/chat.db`; import is read-only. Managed AI scans the selected local history window (50 days by default, adjustable from 7 to 180 days) and sends a bounded recent excerpt per thread; local-only compatibility retains its earlier heuristics.
 - Contacts: optional local-only name matching so Messages can show names instead of phone numbers or email handles.
 - System notifications: no longer used for queue alerts; the pixel cat replaces them in this version.
 - Calendar: status is checked through EventKit; in-app prompts are disabled under `swift run` and should be requested from a packaged app.

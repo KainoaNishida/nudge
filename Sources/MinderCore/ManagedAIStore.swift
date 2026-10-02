@@ -42,8 +42,11 @@ public struct AnalysisCoverage: Codable {
 }
 public struct ManagedLocalState: Codable {
     public enum Mode: String, Codable { case local, managed }
+    public static let defaultHistoryWindowDays = 50
+    public static let allowedHistoryWindowDays = 7...180
     public var mode: Mode = .local
     public var goal = UserGoal()
+    public var historyWindowDays = defaultHistoryWindowDays
     public var accountId: String?
     public var cacheAccountId: String?
     public var consentVersion = 0
@@ -61,8 +64,11 @@ public struct ManagedLocalState: Codable {
     public var status: ManagedAIStatus?
     public init() {}
     public func visible(at now: Date = Date()) -> [ThreadRecommendation] {
-        orderedIds.compactMap { recommendations[$0] }.filter { rec in
-            !(threads[rec.threadId]?.muted ?? false) && (rec.state == .active || (rec.state == .snoozed && (rec.snoozedUntil ?? .distantFuture) <= now))
+        let cutoff = now.addingTimeInterval(-Double(historyWindowDays) * 86_400)
+        return orderedIds.compactMap { recommendations[$0] }.filter { rec in
+            guard let thread = threads[rec.threadId] else { return false }
+            return !thread.muted && (thread.snapshot.coverage.excerptEnd ?? .distantPast) >= cutoff &&
+                (rec.state == .active || (rec.state == .snoozed && (rec.snoozedUntil ?? .distantFuture) <= now))
         }
     }
 }
@@ -100,6 +106,20 @@ extension MinderStore {
             for id in state.threads.keys { state.threads[id]?.lastAttemptAt = nil }
             state.coverage.reviewed = 0; state.coverage.scanComplete = false
             state.coverage.detail = "Your queue uses previous preferences. Refresh to apply your goal."
+        }
+    }
+    public func saveHistoryWindowDays(_ days: Int) throws {
+        guard ManagedLocalState.allowedHistoryWindowDays.contains(days) else {
+            throw ManagedAIError.unavailable("Choose a history window between 7 and 180 days.")
+        }
+        try updateManagedState { state in
+            guard state.historyWindowDays != days else { return }
+            state.historyWindowDays = days; state.revision += 1
+            state.scanCursor = 0; state.scanStartedAt = nil; state.scanId = nil
+            state.coverage = AnalysisCoverage()
+            state.coverage.detail = "History window changed to \(days) days. Refresh to reassess recent conversations."
+            for id in state.recommendations.keys { state.recommendations[id]?.stale = true }
+            state.rankingPassCache.removeAll()
         }
     }
     public func managedAction(_ action: RecommendationFeedback.Action, recommendationId: String, days: Int = 1, timeZone: TimeZone = .current, now: Date = Date()) throws {
@@ -144,7 +164,7 @@ extension MinderStore {
     }
     public func clearManagedData(keepPreferences: Bool) throws {
         if keepPreferences {
-            let old = try managedState(); var state = ManagedLocalState(); state.goal = old.goal; state.mode = old.mode; state.accountId = old.accountId; state.cacheAccountId = old.cacheAccountId; state.consentVersion = old.consentVersion; state.revision = old.revision + 1
+            let old = try managedState(); var state = ManagedLocalState(); state.goal = old.goal; state.historyWindowDays = old.historyWindowDays; state.mode = old.mode; state.accountId = old.accountId; state.cacheAccountId = old.cacheAccountId; state.consentVersion = old.consentVersion; state.revision = old.revision + 1
             try saveManagedState(state)
         } else { try database.execute("DELETE FROM managed_ai_state") }
     }

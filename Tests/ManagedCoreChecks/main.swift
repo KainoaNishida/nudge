@@ -55,6 +55,11 @@ final class FakeService: ThreadAssessmentService {
         let record = ManagedThreadRecord(snapshot: snapshot, localThreadId: "legacy-thread", externalId: "iMessage;-;synthetic")
         let store = try MinderStore(databaseURL: root.appendingPathComponent("app.sqlite"))
         var state = ManagedLocalState(); state.accountId = "account-a"; state.mode = .managed; state.consentVersion = 1; try store.saveManagedState(state)
+        var legacyStateJSON = try JSONSerialization.jsonObject(with: ManagedJSON.encoder().encode(state)) as! [String: Any]
+        legacyStateJSON.removeValue(forKey: "historyWindowDays")
+        let legacyStateText = String(decoding: try JSONSerialization.data(withJSONObject: legacyStateJSON), as: UTF8.self)
+        try store.database.execute("UPDATE managed_ai_state SET json=? WHERE id=1", [.text(legacyStateText)])
+        try expect(store.managedState().historyWindowDays == 50, "managed history defaults to 50 days")
         let collector = FakeCollector([record]); let service = FakeService(response.decisions[0].recommendation!)
         let coordinator = ManagedAssessmentCoordinator(store: store, service: service, collector: collector)
         let profile = UserProfile(displayName: "Kai")
@@ -121,13 +126,38 @@ final class FakeService: ThreadAssessmentService {
         quietProfile.notificationCadence = .dailyDigest
         try expect(!ManagedLifecycle.mayNotify(profile: quietProfile, previous: day.addingTimeInterval(-3600), now: day), "daily digest stays within one local day")
         try await sourceChecks(root: root)
+        try await historyWindowChecks(root: root, record: record, content: response.decisions[0].recommendation!)
         try unknownSenderChecks(root: root)
         try dateDecodingChecks()
         try sessionStoreChecks()
         try petAttentionChecks()
         try await staleChecks(root: root, record: record, content: response.decisions[0].recommendation!)
         try await expansionAndRankingChecks(root: root, record: record, content: response.decisions[0].recommendation!)
-        print("Managed Swift checks passed: contract, cache, staging, outages, stale results, lifecycle, read state, collection, expansion, and complete ranking.")
+        print("Managed Swift checks passed: contract, configurable history, cache, staging, outages, stale results, lifecycle, read state, collection, expansion, and complete ranking.")
+    }
+    @MainActor static func historyWindowChecks(root: URL, record: ManagedThreadRecord, content: RecommendationContent) async throws {
+        let store = try MinderStore(databaseURL: root.appendingPathComponent("history-window.sqlite"))
+        var state = ManagedLocalState(); state.mode = .managed; state.accountId = "a"; state.consentVersion = 1; state.historyWindowDays = 90
+        try store.saveManagedState(state)
+        var old = record
+        let oldDate = Date().addingTimeInterval(-60 * 86_400)
+        old.snapshot.messages[0].sentAt = oldDate
+        old.snapshot.coverage.observationStart = oldDate.addingTimeInterval(-86_400)
+        old.snapshot.coverage.excerptStart = oldDate
+        old.snapshot.coverage.excerptEnd = oldDate
+        try old.snapshot.stamp()
+        let collector = FakeCollector([old]), service = FakeService(content)
+        let coordinator = ManagedAssessmentCoordinator(store: store, service: service, collector: collector)
+        let profile = UserProfile(displayName: "Kai")
+        try await coordinator.refresh(profile: profile)
+        try expect(store.managedState().visible().count == 1, "90-day scope can recommend a 60-day-old conversation")
+        try store.saveHistoryWindowDays(50)
+        try expect(store.managedState().visible().isEmpty, "narrowing scope hides older AI items immediately")
+        try await coordinator.refresh(profile: profile)
+        try expect(store.managedState().coverage.total == 0 && service.assessmentCalls == 1, "narrow scope does not reassess older conversations")
+        try store.saveHistoryWindowDays(90)
+        try await coordinator.refresh(profile: profile)
+        try expect(store.managedState().visible().count == 1, "widening scope restores still-valid ranked recommendations")
     }
     static func petAttentionChecks() throws {
         var tracker = PetAttentionTracker()
@@ -214,6 +244,7 @@ final class FakeService: ThreadAssessmentService {
         try db.execute("INSERT INTO handle VALUES('person@example.test')")
         try db.execute("INSERT INTO chat VALUES('iMessage;+;busy','Busy')")
         try db.execute("INSERT INTO chat VALUES('iMessage;-;quiet','Quiet')")
+        try db.execute("INSERT INTO chat VALUES('iMessage;-;old','Older than default window')")
         let now = Date(); let timestamp = Int(AppleMessagesDateCodec.messageDateValue(from: now.addingTimeInterval(-3600)))
         for n in 1...600 {
             try db.execute("INSERT INTO message VALUES(?,?,?,0,1,0,0)",[.text("busy-\(n)"),.text("Message \(n)"),.int(timestamp+n)])
@@ -221,9 +252,18 @@ final class FakeService: ThreadAssessmentService {
         }
         try db.execute("INSERT INTO message VALUES('quiet','Please reply',?,0,1,0,0)",[.int(timestamp-3600*1_000_000_000)])
         try db.execute("INSERT INTO chat_message_join VALUES(2,601)")
+        let oldTime = Int(AppleMessagesDateCodec.messageDateValue(from: now.addingTimeInterval(-60 * 86_400)))
+        try db.execute("INSERT INTO message VALUES('old','Old follow-up',?,0,1,0,0)",[.int(oldTime)])
+        try db.execute("INSERT INTO chat_message_join VALUES(3,602)")
+        try db.execute("INSERT INTO message VALUES('quiet-old','Older quiet context',?,0,1,0,0)",[.int(oldTime)])
+        try db.execute("INSERT INTO chat_message_join VALUES(2,603)")
         let collector = ManagedMessagesCollector(databaseURL: url)
         let page = try collector.page(after: 0, now: now, timeZone: TimeZone(identifier: "America/Los_Angeles")!)
-        try expect(page.records.count == 2, "busy chats cannot crowd out quiet threads")
+        try expect(page.records.count == 2, "50-day default excludes older threads without crowding out quiet recent ones")
+        let wider = try ManagedMessagesCollector(databaseURL: url, historyWindowDays: 90).page(after: 0, now: now, timeZone: .current)
+        try expect(wider.records.count == 3, "a wider user setting includes older conversations")
+        try expect(page.records.first { $0.snapshot.title == "Quiet" }?.snapshot.messages.count == 1, "default context omits messages beyond 50 days")
+        try expect(wider.records.first { $0.snapshot.title == "Quiet" }?.snapshot.messages.count == 2, "wider context includes older messages")
         let busy = page.records.first { $0.snapshot.title == "Busy" }!
         let roundTripped = try ManagedJSON.decoder().decode(ManagedThreadRecord.self, from: ManagedJSON.encoder().encode(busy))
         try expect(collector.isCurrent(roundTripped), "snapshot timestamps survive SQLite JSON round-trip without false staleness")
@@ -242,6 +282,10 @@ final class FakeService: ThreadAssessmentService {
         try expect(facts.first { $0.metric == "incoming7d" }?.value == "0", "reactions do not count as conversation activity")
         try expect(!facts.contains { $0.metric == "medianGapDays" }, "sparse history does not invent patterns")
         let imported = try MinderStore(databaseURL: root.appendingPathComponent("legacy.sqlite"))
+        try imported.saveHistoryWindowDays(90)
+        try expect(imported.managedState().historyWindowDays == 90, "history window is stored locally")
+        try rejects("history window below range") { try imported.saveHistoryWindowDays(6) }
+        try rejects("history window above range") { try imported.saveHistoryWindowDays(181) }
         let importer = AppleMessagesConversationImporter(databaseURL: url)
         _ = try await importer.importRecent(into: imported, since: now.addingTimeInterval(-86400))
         try db.execute("ALTER TABLE message ADD COLUMN is_read INTEGER DEFAULT 1")
