@@ -16,12 +16,14 @@ IDENTITY="${NUDGE_DEVELOPER_ID_APPLICATION:-}"
 ENTITLEMENTS="$ROOT_DIR/scripts/Nudge.entitlements"
 
 cd "$ROOT_DIR"
-swift build -c release --product Nudge
+source "$ROOT_DIR/scripts/configure-swift-build.sh"
+swift build --disable-sandbox -c release --product Nudge
 
 rm -rf "$APP_DIR" "$STAGING_DIR" "$DMG_PATH"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$BUILD_DIR/Nudge" "$MACOS_DIR/Nudge"
+bash "$ROOT_DIR/scripts/package-cat-icon.sh" "$RESOURCES_DIR"
 if [[ -d "$BUILD_DIR/Nudge_MinderCore.bundle" ]]; then
   cp -R "$BUILD_DIR/Nudge_MinderCore.bundle" "$RESOURCES_DIR/Nudge_MinderCore.bundle"
 elif [[ -d "$BUILD_DIR/Minder_MinderCore.bundle" ]]; then
@@ -43,6 +45,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>6.0</string>
   <key>CFBundleName</key>
   <string>Nudge</string>
+  <key>CFBundleIconFile</key>
+  <string>NudgeCat</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

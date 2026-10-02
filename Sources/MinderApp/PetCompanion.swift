@@ -275,7 +275,7 @@ private struct PixelCatOverlay: View {
     }
 }
 
-private struct PixelCatSprite: View {
+struct PixelCatSprite: View {
     var alerting: Bool
     var alternate: Bool
     var blink: Bool

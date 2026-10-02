@@ -77,15 +77,17 @@ running_nudge_dev_pids() {
 }
 
 cd "$ROOT_DIR"
+source "$ROOT_DIR/scripts/configure-swift-build.sh"
 if [[ "${NUDGE_SKIP_QUIT:-0}" != "1" ]]; then
   quit_running_nudge_dev
 fi
-swift build --product Nudge -Xswiftc -DNUDGE_INTERNAL_DIAGNOSTICS
+swift build --disable-sandbox --product Nudge -Xswiftc -DNUDGE_INTERNAL_DIAGNOSTICS
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 
 cp "$BUILD_DIR/Nudge" "$MACOS_DIR/Nudge"
+bash "$ROOT_DIR/scripts/package-cat-icon.sh" "$RESOURCES_DIR"
 if [[ -d "$BUILD_DIR/Nudge_MinderCore.bundle" ]]; then
   cp -R "$BUILD_DIR/Nudge_MinderCore.bundle" "$RESOURCES_DIR/Nudge_MinderCore.bundle"
 elif [[ -d "$BUILD_DIR/Minder_MinderCore.bundle" ]]; then
@@ -107,6 +109,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>6.0</string>
   <key>CFBundleName</key>
   <string>Nudge</string>
+  <key>CFBundleIconFile</key>
+  <string>NudgeCat</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

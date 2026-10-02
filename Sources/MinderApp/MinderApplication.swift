@@ -6,6 +6,8 @@ import MinderCore
 final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private static var retainedDelegate: MinderApplication?
     private static let backgroundSyncInterval: TimeInterval = 15 * 60
+    private static let queueWindowFrameName = "NudgeQueueWindow"
+    private static let onboardingWindowFrameName = "NudgeSetupWindow"
     private var statusItem: NSStatusItem?
     private var syncTimer: Timer?
     private var viewModel: MinderViewModel?
@@ -158,7 +160,8 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
         window.level = .floating
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
-        window.center()
+        if !window.setFrameUsingName(Self.queueWindowFrameName) { window.center() }
+        window.setFrameAutosaveName(Self.queueWindowFrameName)
         window.isReleasedWhenClosed = false
         window.contentViewController = NSHostingController(rootView: InboxView(model: viewModel, settingsModel: settingsViewModel))
         window.delegate = self
@@ -186,7 +189,8 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
         window.level = .floating
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
-        window.center()
+        if !window.setFrameUsingName(Self.onboardingWindowFrameName) { window.center() }
+        window.setFrameAutosaveName(Self.onboardingWindowFrameName)
         window.isReleasedWhenClosed = false
         window.contentViewController = NSHostingController(rootView: OnboardingView(model: settingsViewModel))
         window.delegate = self
@@ -240,9 +244,11 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
 extension MinderApplication: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if notification.object as? NSWindow === queueWindow {
+            queueWindow?.saveFrame(usingName: Self.queueWindowFrameName)
             queueWindow = nil
         }
         if notification.object as? NSWindow === onboardingWindow {
+            onboardingWindow?.saveFrame(usingName: Self.onboardingWindowFrameName)
             onboardingWindow = nil
         }
     }
