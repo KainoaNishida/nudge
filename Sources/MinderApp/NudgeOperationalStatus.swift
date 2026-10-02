@@ -35,9 +35,7 @@ struct NudgeOperationalStatus: Equatable {
     ) -> NudgeOperationalStatus {
         let fullDisk = health(for: .fullDiskAccess, in: permissionHealth)
         let messages = health(for: .appleMessages, in: permissionHealth)
-        let notifications = health(for: .notifications, in: permissionHealth)
         let messagesSource = sources.first { $0.kind == .appleMessages }
-        let cadence = profile?.notificationCadence ?? .hourlyDigest
 
         if lastRefreshFailed {
             return NudgeOperationalStatus(
@@ -76,16 +74,6 @@ struct NudgeOperationalStatus: Equatable {
                 detail: "Import recent Messages once so Nudge can start building alerts.",
                 systemImage: "arrow.down.message.fill",
                 targetSettingsStep: .messages
-            )
-        }
-
-        if cadence != .quiet, let notificationStatus = notificationLimitedStatus(for: notifications.state) {
-            return NudgeOperationalStatus(
-                state: .limited,
-                title: notificationStatus.title,
-                detail: notificationStatus.detail,
-                systemImage: notificationStatus.systemImage,
-                targetSettingsStep: .notifications
             )
         }
 
@@ -131,36 +119,6 @@ struct NudgeOperationalStatus: Equatable {
         )
     }
 
-    private static func notificationLimitedStatus(for state: HealthState) -> (title: String, detail: String, systemImage: String)? {
-        switch state {
-        case .available:
-            return nil
-        case .missing:
-            return (
-                "Enable notifications",
-                "Messages permissions are working. Notifications have not been enabled yet.",
-                "bell.badge.fill"
-            )
-        case .revoked:
-            return (
-                "Notifications off",
-                "Messages permissions are working. Notifications are disabled in System Settings.",
-                "bell.slash.fill"
-            )
-        case .degraded:
-            return (
-                "Notifications unclear",
-                "Messages permissions are working. Nudge could not confirm notification status.",
-                "bell.badge.waveform.fill"
-            )
-        case .unsupported:
-            return (
-                "Notifications unavailable",
-                "Messages permissions are working. Notifications are unavailable in this launch mode.",
-                "bell.slash.fill"
-            )
-        }
-    }
 }
 
 extension NudgeOperationalStatusState {

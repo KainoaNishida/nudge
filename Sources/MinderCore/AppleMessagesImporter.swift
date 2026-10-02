@@ -439,7 +439,11 @@ public final class AppleMessagesConversationImporter: ConversationImporting {
                 senderLabel: senderLabel,
                 sentAt: sentAt,
                 body: body,
-                isFromUser: isFromUser
+                isFromUser: isFromUser,
+                readState: isFromUser ? .unknown : ((row["read_state"] ?? nil) == "1" ? .read : ((row["read_state"] ?? nil) == "0" ? .unread : .unknown)),
+                senderId: isFromUser ? "local-user" : ManagedJSON.opaque("sender:" + (rawHandle ?? "unknown")),
+                eventKind: ((row["associated_message_type"] ?? nil) ?? "0") == "0" ? .message : .reaction,
+                contentAvailability: body == Self.sentReplyWithoutPlainTextPlaceholder || body == "Message without plain text" ? .unavailable : (body.hasPrefix("[Attachment") ? .attachmentOnly : .available)
             ))
 
             var builder = threadBuilders[threadId] ?? AppleMessagesThreadBuilder(
@@ -692,6 +696,7 @@ public final class AppleMessagesConversationImporter: ConversationImporting {
             message.text AS body,
             message.date AS date_value,
             message.is_from_me AS is_from_me,
+            \(schema.readStateSelect),
             handle.id AS handle_id,
             \(schema.attributedBodyHexSelect),
             \(schema.cacheHasAttachmentsSelect),
@@ -731,6 +736,7 @@ public final class AppleMessagesConversationImporter: ConversationImporting {
             message.text AS body,
             message.date AS date_value,
             message.is_from_me AS is_from_me,
+            \(schema.readStateSelect),
             handle.id AS handle_id,
             \(schema.attributedBodyHexSelect),
             \(schema.cacheHasAttachmentsSelect),
@@ -942,6 +948,10 @@ private struct AppleMessagesImportSchema {
         self.chatHandleJoinColumns = try database.tableColumns("chat_handle_join")
 #endif
         self.attachmentColumns = try database.tableColumns("attachment")
+    }
+
+    var readStateSelect: String {
+        messageColumns.contains("is_read") ? "message.is_read AS read_state" : "NULL AS read_state"
     }
 
     var cacheHasAttachmentsSelect: String {

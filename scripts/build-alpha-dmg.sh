@@ -69,6 +69,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </plist>
 PLIST
 
+python3 "$ROOT_DIR/scripts/configure-managed-build.py" "$CONTENTS_DIR/Info.plist"
+
 chmod +x "$MACOS_DIR/Nudge"
 
 if [[ -n "$IDENTITY" ]]; then

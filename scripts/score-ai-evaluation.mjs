@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+const evaluation=JSON.parse(fs.readFileSync(process.argv[2]??'.build/ai-evaluation.json','utf8'));
+const rows=evaluation.records;
+const selected=rows.filter(r=>r.decision.disposition==='recommend' && r.decision.recommendation?.confidence!=='low');
+const truePositive=selected.filter(r=>r.expected.disposition==='recommend' && r.decision.recommendation?.basis===r.expected.basis).length;
+const obligations=rows.filter(r=>r.expected.clearObligation);
+const precision=selected.length?truePositive/selected.length:0;
+const recall=obligations.filter(r=>r.decision.disposition==='recommend'&&r.decision.recommendation?.confidence!=='low').length/Math.max(1,obligations.length);
+const grounded=selected.filter(r=>r.explanationSupported===true).length/Math.max(1,selected.length);
+const comparisons=evaluation.rankingComparisons??[];
+const ranking=comparisons.filter(c=>c.urgentOutrankedOptional===true).length/Math.max(1,comparisons.length);
+const report={precision,recall,grounded,ranking,humanReviewed:evaluation.humanReviewed,pass:rows.length>=40&&evaluation.humanReviewed===true&&selected.every(r=>typeof r.explanationSupported==='boolean')&&comparisons.length>=20&&rows.filter(r=>r.id.startsWith("expansion_resolution")).every(r=>r.expandedDecision?.disposition==="no_action")&&precision>=.85&&recall>=.90&&grounded>=.95&&ranking>=.95};
+console.log(JSON.stringify(report,null,2));if(!report.pass)process.exitCode=1;

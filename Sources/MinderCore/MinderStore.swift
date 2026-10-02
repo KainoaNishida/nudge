@@ -13,7 +13,7 @@ public enum MinderStoreError: Error, LocalizedError {
 }
 
 public final class MinderStore {
-    private let database: SQLiteDatabase
+    let database: SQLiteDatabase
 
     public init(databaseURL: URL = MinderStore.defaultDatabaseURL()) throws {
         if databaseURL == MinderStore.defaultDatabaseURL() {
@@ -21,6 +21,7 @@ public final class MinderStore {
         }
         database = try SQLiteDatabase(url: databaseURL)
         try migrate()
+        try migrateManagedAI()
     }
 
     public static func defaultDatabaseURL() -> URL {
@@ -74,6 +75,7 @@ public final class MinderStore {
     }
 
     public func eraseAllData() throws {
+        try clearManagedData(keepPreferences: false)
         try database.transaction {
 #if NUDGE_INTERNAL_DIAGNOSTICS
             try database.execute("DELETE FROM gemini_diagnostic_runs")
@@ -90,6 +92,7 @@ public final class MinderStore {
     }
 
     public func deleteSuggestions() throws {
+        try clearManagedData(keepPreferences: true)
         try database.transaction {
             try database.execute("DELETE FROM suggestions")
             try insertAuditEvent(AuditEvent(
@@ -100,6 +103,7 @@ public final class MinderStore {
     }
 
     public func deleteImportedConversationCache() throws {
+        try clearManagedData(keepPreferences: true)
         try database.transaction {
             try database.execute("DELETE FROM suggestions")
             try database.execute("DELETE FROM messages")
@@ -304,6 +308,11 @@ public final class MinderStore {
                         ]
                     )
                 }
+            }
+
+            // Read state is mutable even when every imported message was already present.
+            for message in messages {
+                try database.execute("UPDATE messages SET read_state=?,sender_id=?,event_kind=?,content_availability=?,truncated=? WHERE id=?", [.text(message.readState.rawValue),.text(message.senderId),.text(message.eventKind.rawValue),.text(message.contentAvailability.rawValue),.int(message.truncated ? 1 : 0),.text(message.id)])
             }
 
             try insertAuditEvent(AuditEvent(
@@ -787,6 +796,10 @@ public final class MinderStore {
             """
         )
 
+        var messageColumns = try tableColumns("messages")
+        for (column, definition) in [("read_state", "TEXT NOT NULL DEFAULT 'unknown'"), ("sender_id", "TEXT NOT NULL DEFAULT 'unknown'"), ("event_kind", "TEXT NOT NULL DEFAULT 'unknown'"), ("content_availability", "TEXT NOT NULL DEFAULT 'available'"), ("truncated", "INTEGER NOT NULL DEFAULT 0")] {
+            try addColumnIfMissing(table: "messages", column: column, definition: definition, existingColumns: &messageColumns)
+        }
         try cleanupLegacyGmailData()
     }
 
@@ -1212,7 +1225,12 @@ private func message(from row: [String: String?]) throws -> Message {
         senderLabel: try required(row, "sender_label"),
         sentAt: try requiredDate(row, "sent_at"),
         body: try required(row, "body"),
-        isFromUser: try required(row, "is_from_user") == "1"
+        isFromUser: try required(row, "is_from_user") == "1",
+        readState: ReadState(rawValue: (row["read_state"] ?? nil) ?? "unknown") ?? .unknown,
+        senderId: (row["sender_id"] ?? nil) ?? "unknown",
+        eventKind: MessageEventKind(rawValue: (row["event_kind"] ?? nil) ?? "unknown") ?? .unknown,
+        contentAvailability: ContentAvailability(rawValue: (row["content_availability"] ?? nil) ?? "unavailable") ?? .unavailable,
+        truncated: (row["truncated"] ?? nil) == "1"
     )
 }
 

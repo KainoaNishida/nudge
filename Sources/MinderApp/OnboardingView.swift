@@ -425,7 +425,6 @@ private struct StatusStep: View {
                 )
 
                 PermissionSummaryRow(health: model.health(for: .fullDiskAccess))
-                PermissionSummaryRow(health: model.health(for: .notifications))
                 PermissionSummaryRow(health: model.health(for: .contacts))
             }
 
@@ -438,7 +437,7 @@ private struct StatusStep: View {
         case .ready:
             return [
                 "Nudge is working. Messages access is available and recent Messages have imported.",
-                "Notifications are ready, or your alert timing is set to Quiet."
+                "The pixel cat reacts to new actionable changes using your timing and quiet hours."
             ]
         case .limited:
             return [
@@ -541,113 +540,35 @@ private struct NotificationsStep: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             StepHeader(
-                title: "Notifications",
-                subtitle: "Choose whether Nudge should nudge you when a background refresh finds genuinely new alerts."
+                title: "Pixel cat",
+                subtitle: "A quiet, private companion for new actionable conversations."
             )
 
-            PermissionCard(
-                health: model.health(for: .notifications),
-                detail: notificationHelperText,
-                primaryTitle: notificationPrimaryTitle,
-                primarySystemImage: notificationPrimarySystemImage,
-                primaryAction: notificationPrimaryAction,
-                secondaryTitle: notificationSecondaryTitle,
-                secondaryAction: notificationSecondaryAction
-            )
+            PetSettingsView()
 
             VStack(alignment: .leading, spacing: 14) {
                 LabeledContent("Alert timing") {
-                    Picker("When to notify", selection: $model.profile.notificationCadence) {
+                    Picker("When the cat reacts", selection: $model.profile.notificationCadence) {
                         ForEach(NotificationCadence.allCases, id: \.rawValue) { cadence in
                             Text(cadence.displayName).tag(cadence)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 420)
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 240)
                 }
-
                 Stepper("Quiet hours start: \(timeLabel(model.profile.quietHoursStartMinutes))", value: $model.profile.quietHoursStartMinutes, in: 0...1439, step: 60)
                     .frame(maxWidth: 360, alignment: .leading)
                 Stepper("Quiet hours end: \(timeLabel(model.profile.quietHoursEndMinutes))", value: $model.profile.quietHoursEndMinutes, in: 0...1439, step: 60)
                     .frame(maxWidth: 360, alignment: .leading)
-
                 SetupPathBox(lines: [
-                    "Quiet means Nudge still refreshes Messages, but it will not send system notifications.",
-                    "If macOS notifications are off, Nudge can still build the queue. You just will not receive background digests."
+                    "The cat reacts only after Nudge finds a new or substantively updated actionable conversation.",
+                    "Quiet hours and Quiet mode suppress the alert. The cat replaces macOS notifications for now."
                 ])
             }
         }
-        .onChange(of: model.profile.notificationCadence) { _, _ in
-            model.saveProfile()
-        }
-    }
-
-    private var notificationPrimaryTitle: String {
-        switch model.health(for: .notifications).state {
-        case .available:
-            return "Check Notifications"
-        case .revoked:
-            return "Open Notification Settings"
-        case .degraded, .unsupported:
-            return "Open Notification Settings"
-        case .missing:
-            return "Enable Notifications"
-        }
-    }
-
-    private var notificationPrimarySystemImage: String {
-        switch model.health(for: .notifications).state {
-        case .available:
-            return "arrow.clockwise"
-        case .revoked, .degraded, .unsupported:
-            return "bell.badge"
-        case .missing:
-            return "bell"
-        }
-    }
-
-    private var notificationPrimaryAction: () -> Void {
-        switch model.health(for: .notifications).state {
-        case .available:
-            return { model.refreshPermissions() }
-        case .revoked, .degraded, .unsupported:
-            return { model.openSettings(for: .notifications) }
-        case .missing:
-            return { model.request(.notifications) }
-        }
-    }
-
-    private var notificationSecondaryTitle: String? {
-        switch model.health(for: .notifications).state {
-        case .available, .missing:
-            return "Open Notification Settings"
-        case .revoked, .degraded, .unsupported:
-            return "Check Again"
-        }
-    }
-
-    private var notificationSecondaryAction: (() -> Void)? {
-        switch model.health(for: .notifications).state {
-        case .available, .missing:
-            return { model.openSettings(for: .notifications) }
-        case .revoked, .degraded, .unsupported:
-            return { model.refreshPermissions() }
-        }
-    }
-
-    private var notificationHelperText: String {
-        switch model.health(for: .notifications).state {
-        case .available:
-            return "Nudge can send a digest when new alerts appear."
-        case .missing:
-            return "Click Enable Notifications to ask macOS for permission. Quiet mode keeps notifications off without limiting message monitoring."
-        case .revoked:
-            return "Notifications are off in macOS. Enable Nudge in Notification Settings, then click Check Again."
-        case .degraded:
-            return "The notification prompt did not complete. Open Notification Settings, enable Nudge if it appears, then click Check Again."
-        case .unsupported:
-            return "Notifications are unavailable in this launch mode. Use the packaged Nudge app to enable them."
-        }
+        .onChange(of: model.profile.notificationCadence) { _, _ in model.saveProfile() }
+        .onChange(of: model.profile.quietHoursStartMinutes) { _, _ in model.saveProfile() }
+        .onChange(of: model.profile.quietHoursEndMinutes) { _, _ in model.saveProfile() }
     }
 }
 
@@ -829,59 +750,7 @@ private struct PermissionStep: View {
 
 private struct CloudAIStep: View {
     @ObservedObject var model: OnboardingViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            StepHeader(
-                title: "AI",
-                subtitle: "Local suggestions stay on by default. Gemini is optional and only used after you save a key and turn Cloud AI on."
-            )
-
-            PermissionCard(
-                health: model.health(for: .cloudAI),
-                detail: model.hasGeminiConfig ? "Gemini credentials were detected. Enable cloud AI only if you are comfortable sending selected Messages snippets for structured suggestions." : "No Gemini credentials were detected. Local suggestions remain active.",
-                primaryTitle: "Check Credentials",
-                primarySystemImage: "arrow.clockwise",
-                primaryAction: { model.refreshPermissions() },
-                secondaryTitle: nil,
-                secondaryAction: nil
-            )
-
-            SettingsCard(tint: model.health(for: .cloudAI).state.tint) {
-                Text("Gemini Setup")
-                    .font(.headline)
-
-                SecureField("Gemini API key", text: $model.geminiAPIKeyInput)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-
-                TextField("Model", text: $model.geminiModelInput)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-
-                Text(model.geminiInputValidation.userFacingMessage)
-                    .font(.caption)
-                    .foregroundStyle(model.geminiInputValidation.isValid ? Color.secondary : Color.orange)
-
-                Button {
-                    model.saveGeminiConfig()
-                } label: {
-                    Label("Save Gemini Setup", systemImage: "square.and.arrow.down")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(!model.canSaveGeminiConfig)
-            }
-
-            Toggle("Enable Cloud AI suggestions", isOn: $model.profile.cloudAIEnabled)
-                .toggleStyle(.switch)
-                .disabled(!model.hasGeminiConfig)
-
-            Text(model.hasGeminiConfig ? "Gemini will only be used after this toggle is on and setup is saved." : "Local fallback suggestions remain active without credentials.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
+    var body: some View { ManagedAISettingsView(model: model.managedAI) }
 }
 
 private struct PrivacyStep: View {
@@ -897,7 +766,7 @@ private struct PrivacyStep: View {
             SetupPathBox(lines: [
                 "Imported Messages are stored locally so the queue can show evidence and avoid duplicates.",
                 "The alpha database is not encrypted yet. Delete local data before sharing or returning a test machine.",
-                "Cloud AI is off unless you save Gemini credentials and enable the toggle in AI settings."
+                "Managed AI requires invited sign-in and a separate data-sharing consent in AI settings. Local-only compatibility mode remains available."
             ])
 
             SettingsCard(tint: Color.red) {
@@ -1154,13 +1023,13 @@ private struct AboutStep: View {
                 )
                 GuideSection(
                     systemImage: "bell.badge",
-                    title: "When notifications appear",
-                    detail: "Notifications appear only for genuinely new alerts when notifications are allowed. Set cadence to Quiet if you do not want system notifications."
+                    title: "When the pixel cat reacts",
+                    detail: "The cat reacts only to new actionable conversation changes. Its bubble never shows names or message text. Set Quiet to suppress alerts."
                 )
                 GuideSection(
                     systemImage: "cloud",
                     title: "Local mode works without Gemini credentials",
-                    detail: "If you save Gemini credentials and enable Cloud AI, selected message snippets may be sent to Gemini to improve alert ranking."
+                    detail: "Invited managed AI uses your goal and conversation evidence to rank useful actions. It requires email-code sign-in and separate data-sharing consent."
                 )
             }
         }

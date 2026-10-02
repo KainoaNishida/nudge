@@ -48,6 +48,7 @@ struct NudgeSuggestionCard: Identifiable {
     var recentMessages: [Message] = []
     var messagePlatform: NudgeMessagePlatform = .unknown
     var messagesURL: URL?
+    var managedRecommendation: ThreadRecommendation?
 
     var id: String {
         suggestion.id
@@ -165,6 +166,8 @@ private struct NudgeAlertIdentity: Hashable {
 
 @MainActor
 final class MinderViewModel: ObservableObject {
+    @Published var lastManagedActionId: String?
+    @Published private(set) var managedState = ManagedLocalState()
     @Published private(set) var suggestions: [Suggestion] = []
     @Published private(set) var suggestionCards: [NudgeSuggestionCard] = []
     @Published private(set) var queueItems: [NudgeQueueItem] = []
@@ -196,6 +199,7 @@ final class MinderViewModel: ObservableObject {
     var showQueueWindow: (() -> Void)?
     var isQueueInterfaceVisible: () -> Bool = { false }
 
+    private var managedRefreshRequested = false
     private let store: MinderStore
     private let permissionCoordinator: OnboardingPermissionCoordinator
     private let importer = ConversationImporter()
@@ -227,18 +231,16 @@ final class MinderViewModel: ObservableObject {
     }
 
     var cloudAIStatusText: String {
-        guard let config = GeminiConfig.fromEnvironment(), profile?.cloudAIEnabled == true else {
-            return "Cloud AI is off. Local suggestions are active."
-        }
-        return "Gemini is enabled with \(config.model)."
+        managedState.mode == .managed ? managedState.coverage.detail : "Local-only compatibility mode is active."
     }
 
-    var aiModeLabel: String {
-        GeminiConfig.fromEnvironment() != nil && profile?.cloudAIEnabled == true ? "Gemini" : "Local AI"
-    }
+    var aiModeLabel: String { managedState.mode == .managed ? "Managed AI" : "Local only" }
 
     var operationalStatus: NudgeOperationalStatus {
-        NudgeOperationalStatus.make(
+        if managedState.mode == .managed {
+            return NudgeOperationalStatus(state: managedState.coverage.isComplete ? .ready : .limited, title: managedState.coverage.isComplete ? "Analysis complete" : "Analysis incomplete", detail: managedState.coverage.detail, systemImage: managedState.coverage.isComplete ? "checkmark.circle" : "exclamationmark.circle", targetSettingsStep: .cloudAI)
+        }
+        return NudgeOperationalStatus.make(
             profile: profile,
             permissionHealth: permissionHealth,
             sources: sources,
@@ -248,10 +250,27 @@ final class MinderViewModel: ObservableObject {
     }
 
     var activeSuggestions: [Suggestion] {
-        suggestions
+        if managedState.mode == .managed { return managedState.visible().map(managedDisplaySuggestion) }
+        return suggestions
             .filter { isPrototypeSuggestion($0) }
+            .filter { suggestion in !managedState.threads.values.contains { $0.localThreadId == suggestion.threadId && $0.muted } }
             .filter { $0.state != .completed && $0.state != .dismissed && $0.state != .superseded }
             .sorted(by: isHigherPriorityAlert)
+    }
+
+    /// Anonymous revision markers for actionable conversation changes. Text,
+    /// names, rank, and presentation wording never enter the pet signal.
+    var petActionVersions: [String: String] {
+        var versions: [String: String] = [:]
+        for suggestion in activeSuggestions where suggestion.state != .snoozed {
+            if managedState.mode == .managed {
+                guard let rec = managedState.recommendations[suggestion.id], !rec.stale else { continue }
+                versions[rec.id] = rec.substantiveRevision
+            } else {
+                versions[suggestion.id] = suggestion.evidence.messageId
+            }
+        }
+        return versions
     }
 
     var recentCompletedSuggestions: [Suggestion] {
@@ -325,12 +344,21 @@ final class MinderViewModel: ObservableObject {
     }
 
     func refresh() {
+        let previousItemId = queueItems.first?.id
+        let previousGoalRevision = managedState.goal.revision
         do {
+            try store.seedLegacyManagedQueue()
+            managedState = try store.managedState()
+            if managedState.mode == .managed && statusMessage == "Ready." { statusMessage = managedState.coverage.detail }
             profile = try store.fetchUserProfile()
             sources = try store.fetchSources()
             threads = try store.fetchThreads()
             messages = try store.fetchMessages(limit: 200)
             suggestions = try store.fetchSuggestions(includeCompleted: true)
+            if managedState.mode == .managed {
+                suggestions.removeAll { managedState.recommendations["legacy-" + $0.id] != nil }
+                suggestions += managedState.recommendations.values.map(managedDisplaySuggestion)
+            }
             manualItems = try store.fetchManualQueueItems(includeCompleted: true)
             auditEvents = try store.fetchAuditEvents(limit: 12)
 #if NUDGE_INTERNAL_DIAGNOSTICS
@@ -352,7 +380,10 @@ final class MinderViewModel: ObservableObject {
             if suggestions.isEmpty && statusMessage == "Ready." {
                 statusMessage = messages.isEmpty ? "Refresh to check Messages." : "Refresh Messages for alerts."
             }
-            try refreshQueuePresentation()
+            try refreshQueuePresentation(preserving: previousItemId)
+            if managedState.mode == .managed && previousGoalRevision != managedState.goal.revision {
+                Task { @MainActor in self.syncAndGenerateSuggestions(reason: .manual) }
+            }
         } catch {
             lastRefreshFailed = true
             statusMessage = "Refresh failed: \(error.localizedDescription)"
@@ -490,6 +521,7 @@ final class MinderViewModel: ObservableObject {
     }
 
     func syncAndGenerateSuggestions(reason: NudgeSuggestionSyncReason) {
+        if (try? store.managedState().mode) == .managed { refreshManaged(reason: reason); return }
         guard !isGeneratingSuggestions else {
             if reason == .manual {
                 statusMessage = "Nudge is already checking Messages."
@@ -586,6 +618,7 @@ final class MinderViewModel: ObservableObject {
     }
 
     func complete(_ suggestion: Suggestion) {
+        if managedState.recommendations[suggestion.id] != nil { managedAction(.done, id: suggestion.id); return }
         update(suggestion, to: .completed)
     }
 
@@ -598,6 +631,7 @@ final class MinderViewModel: ObservableObject {
     }
 
     func undoCompleted(_ suggestion: Suggestion) {
+        if managedState.recommendations[suggestion.id] != nil { managedAction(.undone, id: suggestion.id); return }
         perform("Restoring suggestion...") {
             try self.store.updateSuggestionState(id: suggestion.id, state: .new)
             self.statusMessage = "Restored \(suggestion.evidence.threadTitle) to the inbox."
@@ -686,18 +720,20 @@ final class MinderViewModel: ObservableObject {
         return try await messagesImporter.importRecent(into: store, since: cutoff)
     }
 
-    private func refreshQueuePresentation() throws {
+    private func refreshQueuePresentation(preserving itemID: String? = nil) throws {
         let currentActiveSuggestions = activeSuggestions
         activeAlertCount = currentActiveSuggestions.count
         alertLegendItems = makeAlertLegendItems(from: currentActiveSuggestions)
         let cards = try makeSuggestionCards(from: currentActiveSuggestions)
         suggestionCards = cards
         let allQueueItems = makeQueueItems(from: cards)
+        if let itemID, let index = allQueueItems.firstIndex(where: { $0.id == itemID }) { queuePageIndex = index / Self.queuePageSize }
         queuePageIndex = min(queuePageIndex, maxQueuePageIndex(forItemCount: allQueueItems.count))
         queueItems = pageItems(from: allQueueItems)
     }
 
     func messagesURL(for suggestion: Suggestion) -> URL? {
+        if let record = managedState.threads[suggestion.threadId] { return AppleMessagesLink.url(threadExternalId: record.externalId) }
         guard sources.contains(where: { $0.id == suggestion.sourceId && $0.kind == .appleMessages }),
               let thread = threads.first(where: { $0.id == suggestion.threadId && $0.sourceId == suggestion.sourceId })
         else {
@@ -708,6 +744,14 @@ final class MinderViewModel: ObservableObject {
 
     private func makeSuggestionCards(from suggestions: [Suggestion]) throws -> [NudgeSuggestionCard] {
         try suggestions.map { suggestion in
+            if let rec = managedState.recommendations[suggestion.id], let record = managedState.threads[rec.threadId] {
+                let preview = record.snapshot.messages.map { message in
+                    Message(id: message.id, sourceId: "apple-messages-local", threadId: rec.threadId, externalId: message.id,
+                        senderLabel: record.localSenderLabels[message.senderId] ?? record.snapshot.participants.first(where: { $0.id == message.senderId })?.displayName ?? "Unknown", sentAt: message.sentAt,
+                        body: message.contentAvailability == .available ? message.body : (message.contentAvailability == .attachmentOnly ? "[Attachment; content unavailable]" : "[Message content unavailable]"), isFromUser: message.isFromUser)
+                }
+                return NudgeSuggestionCard(suggestion: suggestion, recentMessages: preview, messagePlatform: NudgeMessagePlatform(threadExternalId: record.externalId), messagesURL: messagesURL(for: suggestion), managedRecommendation: rec)
+            }
             let thread = threads.first { $0.id == suggestion.threadId }
             return NudgeSuggestionCard(
                 suggestion: suggestion,
@@ -721,6 +765,7 @@ final class MinderViewModel: ObservableObject {
     private func makeQueueItems(from suggestionCards: [NudgeSuggestionCard]) -> [NudgeQueueItem] {
         let suggestionItems = suggestionCards.map(NudgeQueueItem.suggestion)
         let manualItems = activeManualItems.map(NudgeQueueItem.manual)
+        if managedState.mode == .managed { return activeManualItems.sorted { $0.createdAt > $1.createdAt }.map(NudgeQueueItem.manual) + suggestionItems }
         return (suggestionItems + manualItems).sorted(by: isHigherPriorityQueueItem)
     }
 
@@ -787,11 +832,68 @@ final class MinderViewModel: ObservableObject {
         await alertNotifier.notifyNewAlerts(newAlerts)
     }
 
+    func managedAction(_ action: RecommendationFeedback.Action, id: String, days: Int = 1) {
+        do {
+            try store.managedAction(action, recommendationId: id, days: days, timeZone: TimeZone(identifier: profile?.timeZoneIdentifier ?? "") ?? .current)
+            lastManagedActionId = action == .undone ? nil : id
+            statusMessage = action == .done ? "Done." : "Conversation preference saved."
+            refresh()
+        } catch { statusMessage = error.localizedDescription }
+    }
+
+    private func managedDisplaySuggestion(_ rec: ThreadRecommendation) -> Suggestion {
+        let record = managedState.threads[rec.threadId]
+        let state: SuggestionState
+        switch rec.state { case .active: state = .new; case .done: state = .completed; case .dismissed, .muted: state = .dismissed; case .snoozed: state = .snoozed; case .superseded: state = .superseded }
+        return Suggestion(id: rec.id, type: .followUpNudge, state: state, title: rec.content.headline,
+            action: SuggestionAction(text: rec.content.nextStep), sourceId: "apple-messages-local", threadId: rec.threadId, confidence: 1,
+            evidence: Evidence(sourceApp: "Apple Messages", threadTitle: record?.localDisplayTitle ?? record?.snapshot.title ?? "Conversation", messageId: rec.evidenceMessages.first?.id ?? rec.id,
+                snippet: rec.evidenceText().joined(separator: "\n\n"), sourceTimestamp: record?.snapshot.coverage.excerptEnd ?? rec.assessedAt),
+            createdAt: rec.createdAt, updatedAt: rec.assessedAt, snoozedUntil: rec.snoozedUntil, completedAt: rec.actionAt)
+    }
+
+    private func refreshManaged(reason: NudgeSuggestionSyncReason) {
+        guard !isGeneratingSuggestions else { managedRefreshRequested = true; return }
+        isGeneratingSuggestions = true
+        lastRefreshFailed = false
+        statusMessage = "Checking managed AI access…"
+        Task { @MainActor in
+            defer {
+                self.isGeneratingSuggestions = false
+                if self.managedRefreshRequested {
+                    self.managedRefreshRequested = false
+                    Task { @MainActor in self.syncAndGenerateSuggestions(reason: .manual) }
+                }
+            }
+            do {
+                guard let configuration = ManagedServiceConfiguration.configured() else { throw ManagedAIError.unavailable("This build has no managed service configured. Add the development or alpha project configuration before signing in.") }
+                let state = try self.store.managedState()
+                let client = ManagedAIClient(configuration: configuration, consentVersion: state.consentVersion)
+                let coordinator = ManagedAssessmentCoordinator(store: self.store, service: client, collector: ManagedMessagesCollector(contactResolver: MacContactResolver()))
+                try await coordinator.refresh(profile: self.profile ?? UserProfile(displayName: NSFullUserName()), bypassFailureBackoff: reason == .manual) {
+                    self.statusMessage = $0
+                    if let state = try? self.store.managedState() { self.managedState = state }
+                }
+                self.refresh()
+                self.lastRefreshFailed = self.managedState.coverage.failed > 0
+                self.statusMessage = self.managedState.coverage.detail
+            } catch {
+                self.lastRefreshFailed = true
+                try? self.store.updateManagedState { state in
+                    state.coverage.detail = error.localizedDescription
+                    state.coverage.failed = max(1,state.coverage.failed)
+                    for id in state.recommendations.keys { state.recommendations[id]?.stale = true }
+                }
+                self.refresh(); self.statusMessage = error.localizedDescription
+            }
+        }
+    }
+
     private func generateStoredSuggestions() async throws -> (generated: SuggestionGenerationReport, mode: String, fallbackError: Error?) {
         let config = GeminiConfig.fromEnvironment()
         let inputs = try storedRankingInputs()
 
-        guard profile?.cloudAIEnabled == true else {
+        guard (try store.managedState()).mode != .local, profile?.cloudAIEnabled == true else {
             let report = try await localFallbackReport()
 #if NUDGE_INTERNAL_DIAGNOSTICS
             saveGeminiDiagnosticRun(

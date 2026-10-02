@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "requestId": "9921db01-2aeb-570d-bb36-cd9eb1f9be6c",
+  "runId": "11111111-1111-4111-8111-111111111111",
+  "model": "gemini-3.8-flash",
+  "promptVersion": "assess-v1",
+  "usage": {
+    "inputTokens": 100,
+    "outputTokens": 50,
+    "thinkingTokens": 20
+  },
+  "durationMs": 100,
+  "decisions": [
+    {
+      "threadId": "thread-a",
+      "snapshotId": "snapshot-read_request",
+      "disposition": "recommend",
+      "decisionSummary": "An explicit form request remains unresolved.",
+      "recommendation": {
+        "headline": "Send the signed form",
+        "why": "Avery asked you to send the signed form by tomorrow. There is no completion in the supplied messages.",
+        "nextStep": "Send the signed form.",
+        "basis": "follow_through",
+        "confidence": "high",
+        "urgency": "soon",
+        "evidenceRefs": [
+          {
+            "kind": "message",
+            "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+          }
+        ],
+        "reassessAfter": null
+      },
+      "contextRequest": null
+    }
+  ]
+}

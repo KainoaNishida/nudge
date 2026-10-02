@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "requestId": "9921db01-2aeb-570d-bb36-cd9eb1f9be6c",
+  "runId": "11111111-1111-4111-8111-111111111111",
+  "observedAt": "2026-10-01T16:00:00Z",
+  "timeZone": "America/Los_Angeles",
+  "goal": {
+    "text": "",
+    "revision": 0
+  },
+  "localUser": {
+    "displayName": "Kai",
+    "aliases": [
+      "Kai"
+    ]
+  },
+  "threads": [
+    {
+      "threadId": "thread-a",
+      "snapshotId": "snapshot-read_request",
+      "title": "Avery",
+      "kind": "direct",
+      "participants": [
+        {
+          "id": "local-user",
+          "displayName": "You",
+          "isLocalUser": true
+        },
+        {
+          "id": "avery",
+          "displayName": "Avery",
+          "isLocalUser": false
+        }
+      ],
+      "messages": [
+        {
+          "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef",
+          "senderId": "avery",
+          "sentAt": "2026-09-30T16:00:00Z",
+          "isFromUser": false,
+          "body": "Please send me the signed form by tomorrow.",
+          "readState": "read",
+          "eventKind": "message",
+          "contentAvailability": "available",
+          "truncated": false
+        }
+      ],
+      "activityFacts": [
+        {
+          "id": "activity-30",
+          "metric": "activeDays30d",
+          "value": "0",
+          "windowStart": "2026-09-01T16:00:00Z",
+          "windowEnd": "2026-10-01T16:00:00Z"
+        }
+      ],
+      "coverage": {
+        "scanComplete": true,
+        "observationStart": "2026-04-04T16:00:00Z",
+        "observationEnd": "2026-10-01T16:00:00Z",
+        "excerptStart": "2026-09-30T16:00:00Z",
+        "excerptEnd": "2026-09-30T16:00:00Z",
+        "moreContextAvailable": false
+      },
+      "previousRecommendation": null,
+      "feedback": [],
+      "contextPass": "initial"
+    }
+  ]
+}

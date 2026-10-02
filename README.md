@@ -1,6 +1,8 @@
 # Nudge
 
-Nudge is a macOS-first conversation assistant prototype. This repository currently contains the native SwiftPM vertical slice: a menu bar app, onboarding/settings, local SQLite persistence, Apple Messages read-only import, bundled sample conversation import, permission health, optional Gemini structured suggestion generation, and local suggestion lifecycle actions.
+Nudge is a macOS-first conversation assistant prototype. This repository currently contains the native SwiftPM vertical slice: a menu bar app, onboarding/settings, local SQLite persistence, Apple Messages read-only import, bundled sample conversation import, permission health, goal-aware managed AI behind invited access, and local suggestion lifecycle actions.
+
+The managed implementation, verification commands, and remaining deployment inputs are documented in [Managed AI rollout](docs/managed-ai-rollout.md).
 
 ## Current Build Slice
 
@@ -11,7 +13,7 @@ Nudge is a macOS-first conversation assistant prototype. This repository current
 
 ## Using Nudge
 
-Nudge runs as a menu bar app. After launch, click the Nudge symbol or the `Nudge` title in the macOS menu bar to open the queue.
+Nudge runs as a menu bar app with a tiny pixel cat on the desktop. Click either the cat or the menu bar item to open the movable queue window. The cat sits at a screen edge and can appear over other apps' full-screen Spaces.
 
 For realistic first-run behavior, use the packaged development app instead of `swift run`:
 
@@ -24,13 +26,13 @@ This builds and opens `.build/NudgeDev/Nudge.app`. Keep using that same app bund
 ### First Setup
 
 1. Launch Nudge.
-2. Open the menu bar popover if it is not already visible.
+2. Open the setup window if it is not already visible.
 3. In `Settings`, follow the setup steps from `Welcome` through `Summary`.
 4. In `Messages`, click `Open System Settings`, then enable Nudge in `Privacy & Security > Full Disk Access`.
 5. Reopen Nudge if macOS asks you to restart the app.
 6. Return to `Settings > Messages` and click `Import Messages`.
 7. Optional: request Contacts access so imported Messages can show names instead of phone numbers or email addresses.
-8. Optional: enable Notifications and choose an alert timing. `Quiet` keeps background refreshes on but suppresses system notifications.
+8. In `Pixel cat`, choose the screen, edge, alert timing, and quiet hours. `Quiet` keeps background refreshes on without making the cat alert.
 9. Click `Finish Setup`.
 
 Messages import is read-only. Nudge copies the last 30 days of local Messages into its own SQLite cache, then focuses active alerts on recent conversations that may need a reply, reminder, deadline follow-up, or other completion.
@@ -47,14 +49,14 @@ Messages import is read-only. Nudge copies the last 30 days of local Messages in
 - The status button in the footer opens the setting most likely to fix missing or degraded setup.
 - Use the power button in the header to quit Nudge.
 
-After setup, Nudge also runs a background refresh every 15 minutes while the app is open. Background notifications appear only for genuinely new alerts when notifications are enabled.
+After setup, Nudge also runs a background refresh every 15 minutes while the app is open. The cat shows a generic “New updates!” bubble only when an actionable conversation is newly accepted or substantively updated. It does not show names or message text. Mac notifications are disabled while the pet is the notifier.
 
 ### Settings and Privacy
 
-- `Status` summarizes whether Messages import, permissions, and notifications are healthy.
+- `Status` summarizes whether Messages import and core permissions are healthy.
 - `Messages` manages Full Disk Access, recent import, and optional Contacts access.
-- `Notifications` controls notification permission, cadence, and quiet hours.
-- `AI` keeps local suggestions on by default. Gemini is used only after credentials are saved and Cloud AI is enabled.
+- `Pixel cat` controls visibility, screen, edge, manual screen-sharing pause, a one-hour hide, cadence, and quiet hours. Dragging the cat moves it and snaps it to an edge.
+- `AI` offers local-only compatibility mode and invited managed AI with an optional goal, email-code sign-in, and explicit data-sharing consent.
 - `Theme` changes the accent color used by the queue and setup screens.
 - `Privacy` can delete generated suggestions, imported Messages cache, or all local Nudge data.
 
@@ -81,17 +83,11 @@ scripts/build-dev-app.sh
 
 The script creates `.build/NudgeDev/Nudge.app`, includes the SwiftPM resources and usage-description metadata, ad-hoc signs when possible, and launches it with `open`. Use this app bundle when granting Full Disk Access or testing Notifications, Calendar, and Reminders prompts.
 
-## Gemini Configuration
+## Managed AI Configuration
 
-Gemini is optional for the first slice. If `GEMINI_API_KEY` is missing, Nudge uses local heuristic suggestions. If credentials are present, cloud suggestions still remain off until the user enables Cloud AI in onboarding.
+The app requires `NUDGE_SUPABASE_URL` and `NUDGE_SUPABASE_PUBLISHABLE_KEY` at development launch or packaging time. The Gemini key stays in Supabase Edge Function secrets. Users sign in with an invited email and accept the new disclosure in AI settings. Local-only mode remains available without credentials.
 
-```sh
-export GEMINI_API_KEY="..."
-export GEMINI_MODEL="gemini-2.5-flash" # optional; defaults to gemini-2.5-flash
-swift run Nudge
-```
-
-For local development, the app also reads `GEMINI_API_KEY` and `GEMINI_MODEL` from a repo-local `.env` file or `~/.nudge.env`. `.env` files are ignored by git. Existing `~/.loop.env` and `~/.minder.env` files are still read as legacy fallbacks.
+See [managed AI rollout](docs/managed-ai-rollout.md) for development/alpha setup, SMTP, spending controls, synthetic evaluation and release gates. Old `.nudge.env` Gemini credentials are retained for legacy diagnostics; they do not enable the managed pipeline.
 
 ## Alpha Packaging
 
@@ -109,9 +105,9 @@ Without signing/notary environment variables, the script still builds `.build/Nu
 
 First launch opens a setup window for the user profile and core permission health. The current SwiftPM build performs best-effort checks for:
 
-- Full Disk Access / Apple Messages: validated by attempting to read `~/Library/Messages/chat.db`; import is read-only, keeps 30 days for context, and focuses active alerts on the last 7 days.
+- Full Disk Access / Apple Messages: validated by attempting to read `~/Library/Messages/chat.db`; import is read-only. Managed AI scans six months of local activity and sends a bounded recent excerpt per thread; local-only compatibility retains its earlier heuristics.
 - Contacts: optional local-only name matching so Messages can show names instead of phone numbers or email handles.
-- Notifications: shown as unsupported under `swift run` because UserNotifications requires a packaged `.app` bundle.
+- System notifications: no longer used for queue alerts; the pixel cat replaces them in this version.
 - Calendar: status is checked through EventKit; in-app prompts are disabled under `swift run` and should be requested from a packaged app.
 - Reminders: status is checked through EventKit; in-app prompts are disabled under `swift run` and should be requested from a packaged app.
 

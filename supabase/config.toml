@@ -1,0 +1,27 @@
+project_id = "nudge-development"
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+[db]
+port = 54322
+major_version = 17
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+enable_signup = false
+jwt_expiry = 900
+[auth.email]
+# This controls the email provider. Global auth.enable_signup stays false
+# so invited users can sign in while public account creation remains disabled.
+enable_signup = true
+enable_confirmations = true
+otp_length = 6
+otp_expiry = 600
+[auth.email.template.magic_link]
+subject = "Your Nudge sign-in code"
+content_path = "./supabase/templates/email-code.html"
+[functions.nudge-ai]
+# Bearer token is validated with Auth on every request inside the handler.
+# Supports new signing keys; does not rely on the legacy gateway JWT verifier.
+verify_jwt = false

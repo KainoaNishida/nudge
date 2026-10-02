@@ -5,6 +5,7 @@ import MinderCore
 
 @MainActor
 final class OnboardingViewModel: ObservableObject {
+    let managedAI: ManagedAISettingsModel
     @Published var profile: UserProfile
     @Published private(set) var permissionHealth: [PermissionHealth] = []
     @Published private(set) var sources: [ConversationSource] = []
@@ -34,6 +35,7 @@ final class OnboardingViewModel: ObservableObject {
         onComplete: @escaping @MainActor () -> Void,
         onChange: @escaping @MainActor () -> Void
     ) {
+        self.managedAI = ManagedAISettingsModel(store: store, onChange: onChange)
         self.store = store
         self.coordinator = OnboardingPermissionCoordinator(store: store, service: permissionService)
         self.messagesImporter = messagesImporter
@@ -467,7 +469,7 @@ enum OnboardingStep: String, CaseIterable, Identifiable {
         switch self {
         case .welcome: return "Welcome"
         case .status: return "Status"
-        case .notifications: return "Notifications"
+        case .notifications: return "Pixel cat"
         case .profile: return "Preferences"
         case .appearance: return "Theme"
         case .messages: return "Messages"
@@ -482,7 +484,7 @@ enum OnboardingStep: String, CaseIterable, Identifiable {
         switch self {
         case .welcome: return "sparkles"
         case .status: return "gauge.with.dots.needle.67percent"
-        case .notifications: return "bell.badge"
+        case .notifications: return "pawprint.fill"
         case .profile: return "person.crop.circle"
         case .appearance: return "paintpalette"
         case .messages: return "message"

@@ -1,0 +1,15 @@
+{
+  "name": "nudge-managed-ai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test supabase/tests/*.test.ts",
+    "contracts": "node scripts/generate-contract-types.mjs",
+    "typecheck": "tsc -p supabase/functions/nudge-ai/tsconfig.json"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "supabase": "2.119.0",
+    "typescript": "7.0.2"
+  }
+}

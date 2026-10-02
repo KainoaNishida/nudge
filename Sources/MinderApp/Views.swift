@@ -53,6 +53,7 @@ private enum NudgeQueueLayout {
 struct InboxView: View {
     @ObservedObject var model: MinderViewModel
     @ObservedObject var settingsModel: OnboardingViewModel
+    @State private var showAnalysis = false
 
     private var palette: NudgePalette {
         if model.selectedTab == .settings {
@@ -188,7 +189,8 @@ struct InboxView: View {
                         case .suggestion(let card):
                             NudgeSuggestionCardView(
                                 card: card,
-                                complete: { model.complete(card.suggestion) }
+                                complete: { model.complete(card.suggestion) },
+                                secondaryAction: { action, days in model.managedAction(action, id: card.id, days: days) }
                             )
                         case .manual(let manualItem):
                             ManualQueueItemCardView(item: manualItem) {
@@ -216,22 +218,53 @@ struct InboxView: View {
     }
 
     private var footer: some View {
-        HStack(alignment: .center, spacing: 12) {
-            OperationalStatusButton(
-                status: model.operationalStatus,
-                isRefreshing: model.isGeneratingSuggestions
-            ) {
-                settingsModel.selectedStep = .status
-                model.openSettings()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 12) {
+                OperationalStatusButton(
+                    status: model.operationalStatus,
+                    isRefreshing: model.isGeneratingSuggestions
+                ) {
+                    settingsModel.selectedStep = .status
+                    model.openSettings()
+                }
+
+                if model.managedState.mode == .managed {
+                    Button(model.managedState.coverage.isComplete ? "Analysis complete" : "Analysis incomplete") { showAnalysis.toggle() }
+                        .font(.caption)
+                        .popover(isPresented: $showAnalysis) {
+                            ScrollView {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text(model.isGeneratingSuggestions ? model.statusMessage : model.managedState.coverage.detail).font(.headline)
+                                    Text("\(model.managedState.coverage.reviewed)/\(model.managedState.coverage.total) reviewed · \(model.managedState.coverage.unresolved) uncertain · \(model.managedState.coverage.failed) failed or pending").font(.caption)
+                                    ForEach(model.managedState.threads.values.filter { $0.unresolved != nil }.sorted { $0.snapshot.title < $1.snapshot.title }, id: \.snapshot.threadId) { thread in
+                                        Text(thread.localDisplayTitle ?? thread.snapshot.title).font(.headline)
+                                        Text(thread.unresolved ?? "").font(.caption)
+                                        OpenInMessagesButton(url: AppleMessagesLink.url(threadExternalId: thread.externalId))
+                                    }
+                                }.padding()
+                            }.frame(width: 420, height: 340)
+                        }
+                }
+                if let id = model.lastManagedActionId {
+                    Button("Undo") { model.managedAction(.undone, id: id) }.font(.caption)
+                }
+                Spacer()
+
+                if model.selectedTab == .queue && model.queuePageCount > 0 {
+                    QueueFooterPageIndicator(
+                        pageNumber: model.queuePageNumber,
+                        pageCount: model.queuePageCount
+                    )
+                }
             }
-
-            Spacer()
-
-            if model.selectedTab == .queue && model.queuePageCount > 0 {
-                QueueFooterPageIndicator(
-                    pageNumber: model.queuePageNumber,
-                    pageCount: model.queuePageCount
-                )
+            if model.isShowingProgress || model.lastRefreshFailed || model.managedState.mode == .managed {
+                Text(model.statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(model.lastRefreshFailed ? Color.red : NudgeTheme.secondaryText)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .help(model.statusMessage)
+                    .accessibilityIdentifier("refreshStatus")
             }
         }
         .padding(.horizontal, 16)
@@ -240,6 +273,10 @@ struct InboxView: View {
     }
 
     private var lastUpdatedText: String {
+        if model.managedState.mode == .managed {
+            if let date = model.managedState.coverage.lastSuccessAt { return "Last fully reviewed " + date.relativeLabel }
+            return "Analysis incomplete"
+        }
         if let source = model.appleMessagesSource, let sync = source.lastSyncAt {
             return "Last updated \(sync.relativeLabel)"
         }
@@ -451,9 +488,10 @@ private struct NudgeSuggestionCardView: View {
 
     var card: NudgeSuggestionCard
     var complete: () -> Void
+    var secondaryAction: (RecommendationFeedback.Action, Int) -> Void
 
     var body: some View {
-        let tint = card.suggestion.type.tint(in: palette)
+        let tint = card.managedRecommendation == nil ? card.suggestion.type.tint(in: palette) : palette.primary
 
         VStack(spacing: 10) {
             AlertCardShell(tint: tint) {
@@ -481,7 +519,24 @@ private struct NudgeSuggestionCardView: View {
                         }
                     }
 
-                    SuggestedActionStrip(text: card.suggestion.action.text, tint: tint)
+                    if let recommendation = card.managedRecommendation {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 8) {
+                                if recommendation.stale { Text("Based on earlier analysis").font(.caption).foregroundStyle(.orange) }
+                                Text(recommendation.content.why).font(.callout).fixedSize(horizontal: false, vertical: true)
+                                Text("Next step: " + recommendation.content.nextStep).font(.callout.weight(.medium))
+                                DisclosureGroup("Supporting evidence") {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        ForEach(Array(recommendation.evidenceText().enumerated()), id: \.offset) { _, text in
+                                            Text(text).font(.caption).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                    }
+                                }.font(.caption)
+                            }.frame(maxWidth: .infinity, alignment: .leading)
+                        }.frame(maxHeight: 160)
+                    } else {
+                        SuggestedActionStrip(text: card.suggestion.action.text, tint: tint)
+                    }
 
                     ConversationPreview(messages: card.recentMessages, platform: card.messagePlatform)
                         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -489,11 +544,20 @@ private struct NudgeSuggestionCardView: View {
                 }
             }
 
-            QueueCompletionButton(
-                tint: tint,
-                isDisabled: card.suggestion.state == .completed,
-                action: complete
-            )
+            HStack {
+                QueueCompletionButton(tint: tint, isDisabled: card.suggestion.state == .completed, action: complete)
+                if card.managedRecommendation != nil {
+                    Menu {
+                        Menu("Later") {
+                            Button("Tomorrow at 9 a.m.") { secondaryAction(.snoozed, 1) }
+                            Button("In three days at 9 a.m.") { secondaryAction(.snoozed, 3) }
+                            Button("In one week at 9 a.m.") { secondaryAction(.snoozed, 7) }
+                        }
+                        Button("Not useful") { secondaryAction(.notUseful, 1) }
+                        Button("Mute conversation") { secondaryAction(.muted, 1) }
+                    } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).frame(width: 28)
+                }
+            }
         }
         .frame(maxWidth: NudgeQueueLayout.cardMaxWidth)
     }
@@ -1161,10 +1225,10 @@ struct EmptyStateView: View {
                     .frame(width: 68, height: 68)
                 NudgeSymbol(size: 44)
             }
-            Text("Nothing to complete")
+            Text(model.managedState.mode == .managed && !model.managedState.coverage.isComplete ? "Analysis incomplete" : "Nothing to complete")
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(NudgeTheme.text)
-            Text(model.messages.isEmpty ? "No messages checked yet." : "All caught up.")
+            Text(model.managedState.mode == .managed ? model.managedState.coverage.detail : (model.messages.isEmpty ? "No messages checked yet." : "All caught up."))
                 .font(.caption)
                 .foregroundStyle(NudgeTheme.secondaryText)
                 .multilineTextAlignment(.center)

@@ -10,3 +10,6 @@ DerivedData/
 .env
 .env.*
 !.env.example
+node_modules/
+supabase/.temp/
+supabase/.branches/

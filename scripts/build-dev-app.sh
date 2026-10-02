@@ -77,7 +77,9 @@ running_nudge_dev_pids() {
 }
 
 cd "$ROOT_DIR"
-quit_running_nudge_dev
+if [[ "${NUDGE_SKIP_QUIT:-0}" != "1" ]]; then
+  quit_running_nudge_dev
+fi
 swift build --product Nudge -Xswiftc -DNUDGE_INTERNAL_DIAGNOSTICS
 
 rm -rf "$APP_DIR"
@@ -132,6 +134,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+
+python3 "$ROOT_DIR/scripts/configure-managed-build.py" "$CONTENTS_DIR/Info.plist"
 
 chmod +x "$MACOS_DIR/Nudge"
 

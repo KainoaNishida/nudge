@@ -1,0 +1,1302 @@
+[
+  {
+    "id": "urgent-before-relationship-0",
+    "urgentId": "aa9982ef-3bc3-5f42-a67c-e43e95aa2d33",
+    "optionalId": "8d17e5f4-ac6b-54aa-9f81-4f68baa513c1",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "0a22647e-8d89-4c17-9b07-4cedca16e3d1",
+      "runId": "954f4d39-6896-480b-bce8-5af2b4bc3f3d",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "aa9982ef-3bc3-5f42-a67c-e43e95aa2d33",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "8d17e5f4-ac6b-54aa-9f81-4f68baa513c1",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-1",
+    "urgentId": "4e86b060-bbca-57f3-9b54-8b8a650d7437",
+    "optionalId": "18d50c5a-bbcb-5a6d-8e92-66899aefcac4",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "7e8ef540-3e39-478d-a506-c3820b90ee9d",
+      "runId": "36f2b9f2-e9ba-4cc3-8927-b99086cadbec",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "18d50c5a-bbcb-5a6d-8e92-66899aefcac4",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "4e86b060-bbca-57f3-9b54-8b8a650d7437",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-2",
+    "urgentId": "004a7307-c626-5df0-8d00-f9830abab703",
+    "optionalId": "b62ff709-c425-563c-b5db-d6628ae6caac",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "c08471d2-0856-4f97-bdf3-ee9b80e1fd2c",
+      "runId": "945ee99d-38e3-422b-b66e-af0b2c85a6fe",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "004a7307-c626-5df0-8d00-f9830abab703",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "b62ff709-c425-563c-b5db-d6628ae6caac",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-3",
+    "urgentId": "350fcde4-c54b-5a9a-b553-56b83289afe4",
+    "optionalId": "120b0c9b-3a3b-5876-975c-2d24838f1818",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "320611cb-6733-4d00-954c-e4029c5329cf",
+      "runId": "2035500a-80c7-4e87-9996-fd257a7fe976",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "120b0c9b-3a3b-5876-975c-2d24838f1818",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "350fcde4-c54b-5a9a-b553-56b83289afe4",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-4",
+    "urgentId": "3dd2ddd2-a96c-5927-8db4-2d0d875a4d20",
+    "optionalId": "8d3c6d8d-31c5-5b01-bfc0-3eb6d3136876",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "9796302e-10c4-44cb-9048-16ae173abc9e",
+      "runId": "8d8bc81c-334d-4580-9d2e-3f55cc4e9ee8",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "3dd2ddd2-a96c-5927-8db4-2d0d875a4d20",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "8d3c6d8d-31c5-5b01-bfc0-3eb6d3136876",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-5",
+    "urgentId": "4a2c6789-160c-52ce-a65a-fd147897be87",
+    "optionalId": "4601df43-cdf8-5917-bca0-2ab2708c5d3d",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "5ab02e52-1cb1-40c8-bdcb-b5942664c397",
+      "runId": "fc89bd6d-b8db-4d70-9cbe-1f56e48a516c",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "4601df43-cdf8-5917-bca0-2ab2708c5d3d",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "4a2c6789-160c-52ce-a65a-fd147897be87",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-6",
+    "urgentId": "88248e25-a924-592f-abff-26baaf395c12",
+    "optionalId": "60959999-42f9-505c-8b10-2605233f66f6",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "7603da19-a41e-4627-857b-43ad386e688d",
+      "runId": "68dc8cd7-d0c8-4bfd-acab-7abfabcbe58c",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "88248e25-a924-592f-abff-26baaf395c12",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "60959999-42f9-505c-8b10-2605233f66f6",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-7",
+    "urgentId": "ccdde575-9db2-52f9-99fc-c63472b65d74",
+    "optionalId": "d6d923c6-c71c-5c7e-b30b-084e6bb2b092",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "33e23c43-a06f-4765-a818-2f7666ca6c23",
+      "runId": "3ad36eef-bb88-4935-82ea-9b62a39766f1",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "d6d923c6-c71c-5c7e-b30b-084e6bb2b092",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "ccdde575-9db2-52f9-99fc-c63472b65d74",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-8",
+    "urgentId": "a5f51000-d0e4-5a0a-9480-473dc678e6f9",
+    "optionalId": "4cbc839e-4a8e-54fd-bf44-8512e5f75712",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "02c85f36-567a-4004-93f1-58a601ac5312",
+      "runId": "4b034bb4-a05b-45c5-b972-9eaca303e9d8",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "a5f51000-d0e4-5a0a-9480-473dc678e6f9",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "4cbc839e-4a8e-54fd-bf44-8512e5f75712",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-9",
+    "urgentId": "2a51a2ae-5b2e-5150-b92a-b11841547a3e",
+    "optionalId": "95d0711c-d3ff-53a0-a238-60732ebf7099",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "9ccc177e-fa2a-4f78-89b4-f96ff99075e8",
+      "runId": "35be67a3-42e3-47a6-abf2-29e600349376",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "95d0711c-d3ff-53a0-a238-60732ebf7099",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "2a51a2ae-5b2e-5150-b92a-b11841547a3e",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-10",
+    "urgentId": "95e5265e-2ebb-5652-b9b4-872fd1f9dee6",
+    "optionalId": "e6dc388d-20d7-5758-90fa-3dcec4b1a348",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "a44333cf-f1b8-4fea-8146-ef573a343e86",
+      "runId": "ca79ba8d-3829-47f3-ad3f-0b3013cc807b",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "95e5265e-2ebb-5652-b9b4-872fd1f9dee6",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "e6dc388d-20d7-5758-90fa-3dcec4b1a348",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-11",
+    "urgentId": "b39e156a-7210-5e9d-8e51-03ad7680024f",
+    "optionalId": "7a127ec1-d5a1-5992-be75-3732329d6e43",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "ef3e285d-aa89-40e6-a574-8c3d4a597a18",
+      "runId": "69ade3ab-e45e-4cb9-acc0-454bff123db9",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "7a127ec1-d5a1-5992-be75-3732329d6e43",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "b39e156a-7210-5e9d-8e51-03ad7680024f",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-12",
+    "urgentId": "97adcc26-60c0-5000-b6c9-cc87c160e345",
+    "optionalId": "43f097cb-4c5a-5acb-82c4-8831b329e1aa",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "5048ce79-0da1-42e3-ab3d-938c43614259",
+      "runId": "09d07173-b56b-4fde-b02e-d18516f5fb87",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "97adcc26-60c0-5000-b6c9-cc87c160e345",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "43f097cb-4c5a-5acb-82c4-8831b329e1aa",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-13",
+    "urgentId": "ffcbe6db-a79e-59fc-9048-fdb7799f1e6a",
+    "optionalId": "c2cce510-5d30-5307-92b0-195c36aa1cd5",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "86a14a15-aa7f-4faa-8610-8af5c7667129",
+      "runId": "b24c45be-0faa-40ae-b1ac-8f3d65c502ab",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "c2cce510-5d30-5307-92b0-195c36aa1cd5",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "ffcbe6db-a79e-59fc-9048-fdb7799f1e6a",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-14",
+    "urgentId": "76f16177-a951-59a0-b481-23fc85cfe406",
+    "optionalId": "8de70ce9-b38c-51cd-8905-ac97a2ea3a71",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "be2ec782-76b0-4337-acae-3c08d534681f",
+      "runId": "4d8f9594-319c-4719-9568-780c67489213",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "76f16177-a951-59a0-b481-23fc85cfe406",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "8de70ce9-b38c-51cd-8905-ac97a2ea3a71",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-15",
+    "urgentId": "bf782c8f-6a26-5672-9393-2d19205d6b6a",
+    "optionalId": "ace27cbf-fd32-5694-b42f-764b03e27804",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "2427bab2-535e-4ad1-b7ce-3f66825043f2",
+      "runId": "bbe98018-1ae6-415b-9d6b-40a46966b96f",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "ace27cbf-fd32-5694-b42f-764b03e27804",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "bf782c8f-6a26-5672-9393-2d19205d6b6a",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-16",
+    "urgentId": "178d9914-0b57-5a39-8ed0-7e9ea8cba1b8",
+    "optionalId": "7eb9c732-4b0b-5949-8c19-228c698fe04c",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "92027c29-3cf0-4e89-b311-50912b726793",
+      "runId": "f877cfd8-2d6e-444b-aa83-e3551ad34b38",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "178d9914-0b57-5a39-8ed0-7e9ea8cba1b8",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "7eb9c732-4b0b-5949-8c19-228c698fe04c",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-17",
+    "urgentId": "9671caa3-c487-506a-8c19-5afc0074e937",
+    "optionalId": "6da7fb3a-ce5f-54d9-834e-90c7aea265d7",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "94e21131-3c02-4943-a46c-7d2283227f22",
+      "runId": "949f3a19-b100-4081-b549-525b830a0d75",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "6da7fb3a-ce5f-54d9-834e-90c7aea265d7",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "9671caa3-c487-506a-8c19-5afc0074e937",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-18",
+    "urgentId": "fee30f5d-05af-5abe-a680-4b36d3db9c9a",
+    "optionalId": "72820587-c6fe-5db4-a7cf-945fdcb046d8",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "cdb6fe2c-2938-4658-9142-3b71cfbb7943",
+      "runId": "1d74d392-0b0b-4e8e-b943-112fe50a039a",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Stay close to friends and follow through on commitments",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "fee30f5d-05af-5abe-a680-4b36d3db9c9a",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "72820587-c6fe-5db4-a7cf-945fdcb046d8",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "urgent-before-relationship-19",
+    "urgentId": "f525229c-a0a8-5d9f-b442-4d45a4ea5a4f",
+    "optionalId": "5695015d-c145-530d-8f51-aa5335879aaa",
+    "request": {
+      "schemaVersion": 1,
+      "requestId": "d8d90a78-c640-41db-89a9-10cd3e185223",
+      "runId": "09b42714-e146-4254-8998-03449ae3c7aa",
+      "observedAt": "2026-10-01T16:00:00Z",
+      "goal": {
+        "text": "Keep up with friends",
+        "revision": 1
+      },
+      "recommendations": [
+        {
+          "id": "5695015d-c145-530d-8f51-aa5335879aaa",
+          "content": {
+            "headline": "A good time to reconnect",
+            "why": "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal.",
+            "nextStep": "Send a short check-in.",
+            "basis": "relationship",
+            "confidence": "high",
+            "urgency": "routine",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "This conversation was regularly active earlier in the local observation window and has been quiet for three weeks. A check-in fits the stated goal."
+          ],
+          "lastActivityAt": "2026-09-10T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 0
+        },
+        {
+          "id": "f525229c-a0a8-5d9f-b442-4d45a4ea5a4f",
+          "content": {
+            "headline": "Confirm the submission",
+            "why": "The application closes in two hours and a confirmation is explicitly requested.",
+            "nextStep": "Confirm whether the application is submitted.",
+            "basis": "follow_through",
+            "confidence": "high",
+            "urgency": "urgent",
+            "evidenceRefs": [
+              {
+                "kind": "message",
+                "id": "b3d58511-a764-5ffe-9adb-0aa21e7e15ef"
+              }
+            ],
+            "reassessAfter": null
+          },
+          "evidenceSummaries": [
+            "The application closes in two hours and a confirmation is explicitly requested."
+          ],
+          "lastActivityAt": "2026-10-01T15:00:00Z",
+          "assessedAt": "2026-10-01T16:00:00Z",
+          "previousOrder": 1
+        }
+      ]
+    }
+  }
+]

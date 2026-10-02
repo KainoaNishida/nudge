@@ -1,0 +1,23 @@
+// Generated from contracts/v1.json. Run npm run contracts.
+export type Goal = { text: string; revision: number };
+export type Participant = { id: string; displayName: string; isLocalUser: boolean };
+export type LocalUser = { displayName: string; aliases: Array<string> };
+export type Message = { id: string; senderId: string; sentAt: string; isFromUser: boolean; body: string; readState: "read" | "unread" | "unknown"; eventKind: "message" | "reaction" | "system" | "unknown"; contentAvailability: "available" | "attachmentOnly" | "unavailable"; truncated: boolean };
+export type ActivityFact = { id: string; metric: string; value: string; windowStart: string; windowEnd: string };
+export type Coverage = { scanComplete: boolean; observationStart: string; observationEnd: string; excerptStart: string | null; excerptEnd: string | null; moreContextAvailable: boolean };
+export type EvidenceReference = { kind: "message" | "activity"; id: string };
+export type Recommendation = { headline: string; why: string; nextStep: string; basis: "follow_through" | "read_review" | "relationship"; confidence: "low" | "medium" | "high"; urgency: "routine" | "soon" | "urgent"; evidenceRefs: Array<EvidenceReference>; reassessAfter: string | null };
+export type PreviousRecommendation = { id: string; content: Recommendation };
+export type Feedback = { id: string; recommendationId: string; action: "done" | "notUseful" | "snoozed" | "muted" | "undone"; at: string; until: string | null; substantiveRevision: string; basis: "follow_through" | "read_review" | "relationship" };
+export type ThreadSnapshot = { threadId: string; snapshotId: string; title: string; kind: "direct" | "group" | "unknown"; participants: Array<Participant>; messages: Array<Message>; activityFacts: Array<ActivityFact>; coverage: Coverage; previousRecommendation: PreviousRecommendation | null; feedback: Array<Feedback>; contextPass: "initial" | "expanded" };
+export type ContextRequest = { reason: string; totalMessages: 80 };
+export type Decision = { threadId: string; snapshotId: string; disposition: "recommend" | "no_action" | "needs_context"; decisionSummary: string; recommendation: Recommendation | null; contextRequest: ContextRequest | null };
+export type AssessmentRequest = { schemaVersion: 1; requestId: string; runId: string; observedAt: string; timeZone: string; goal: Goal; localUser: LocalUser; threads: Array<ThreadSnapshot> };
+export type AssessmentOutput = { decisions: Array<Decision> };
+export type Usage = { inputTokens: number; outputTokens: number; thinkingTokens: number };
+export type AssessmentResponse = { schemaVersion: 1; requestId: string; runId: string; model: string; promptVersion: string; usage: Usage; durationMs: number; decisions: Array<Decision> };
+export type RankedRecommendation = { id: string; content: Recommendation; evidenceSummaries: Array<string>; lastActivityAt: string; assessedAt: string; previousOrder: number | null };
+export type RankingRequest = { schemaVersion: 1; requestId: string; runId: string; observedAt: string; goal: Goal; recommendations: Array<RankedRecommendation> };
+export type RankingOutput = { orderedRecommendationIds: Array<string> };
+export type RankingResponse = { schemaVersion: 1; requestId: string; runId: string; model: string; promptVersion: string; usage: Usage; durationMs: number; orderedRecommendationIds: Array<string> };
+export type Status = { schemaVersion: 1; access: boolean; rolloutEnabled: boolean; remainingUSD: number; resetsAt: string; model: string; assessPromptVersion: string; rankPromptVersion: string; consentVersion: number };

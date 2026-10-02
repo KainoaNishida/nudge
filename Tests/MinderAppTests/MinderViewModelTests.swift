@@ -674,30 +674,26 @@ final class MinderViewModelTests: XCTestCase {
         XCTAssertEqual(status.targetSettingsStep, .messages)
     }
 
-    func testOperationalStatusLimitedWhenNotificationsAreDeniedAndCadenceIsNotQuiet() throws {
+    func testOperationalStatusReadyWithPetWhenSystemNotificationsAreDenied() throws {
         let status = operationalStatus(
             profile: UserProfile(notificationCadence: .hourlyDigest, completedOnboardingAt: Date()),
             permissionHealth: defaultPermissionHealth(notifications: .revoked),
             sources: [appleMessagesSource(lastSyncAt: Date())]
         )
 
-        XCTAssertEqual(status.state, .limited)
-        XCTAssertEqual(status.title, "Notifications off")
-        XCTAssertEqual(status.shortTitle, "Needs attention")
-        XCTAssertEqual(status.targetSettingsStep, .notifications)
+        XCTAssertEqual(status.state, .ready)
+        XCTAssertEqual(status.title, "Ready")
     }
 
-    func testOperationalStatusLimitedWhenNotificationsAreNotEnabled() throws {
+    func testOperationalStatusReadyWithPetWhenSystemNotificationsWereNeverEnabled() throws {
         let status = operationalStatus(
             profile: UserProfile(notificationCadence: .hourlyDigest, completedOnboardingAt: Date()),
             permissionHealth: defaultPermissionHealth(notifications: .missing),
             sources: [appleMessagesSource(lastSyncAt: Date())]
         )
 
-        XCTAssertEqual(status.state, .limited)
-        XCTAssertEqual(status.title, "Enable notifications")
-        XCTAssertTrue(status.detail.contains("Notifications have not been enabled yet"))
-        XCTAssertEqual(status.targetSettingsStep, .notifications)
+        XCTAssertEqual(status.state, .ready)
+        XCTAssertEqual(status.title, "Ready")
     }
 
     func testOperationalStatusAllowsQuietCadenceWithoutNotificationPermission() throws {
@@ -760,7 +756,7 @@ final class MinderViewModelTests: XCTestCase {
         XCTAssertTrue(source.contains("Mark alerts done"))
         XCTAssertTrue(source.contains("Notifications appear only for genuinely new alerts"))
         XCTAssertTrue(source.contains("Local mode works without Gemini credentials"))
-        XCTAssertTrue(source.contains("selected message snippets may be sent to Gemini"))
+        XCTAssertTrue(source.contains("requires email-code sign-in and separate data-sharing consent"))
     }
 
     func testQueueUsesDoneLanguageForCompletion() throws {

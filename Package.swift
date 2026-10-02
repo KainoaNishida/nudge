@@ -18,6 +18,7 @@ let package = Package(
         )
     ],
     targets: [
+        .executableTarget(name: "NudgeChecks", dependencies: ["MinderCore"], path: "Tests/ManagedCoreChecks"),
         .target(
             name: "CSQLite",
             path: "Sources/CSQLite",

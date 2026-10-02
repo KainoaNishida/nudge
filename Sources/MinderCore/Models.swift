@@ -15,6 +15,7 @@ public enum HealthState: String, Codable, CaseIterable, Hashable {
 
 public enum NotificationCadence: String, Codable, CaseIterable, Hashable {
     case immediately
+    case every15Minutes
     case hourlyDigest
     case dailyDigest
     case quiet
@@ -22,6 +23,7 @@ public enum NotificationCadence: String, Codable, CaseIterable, Hashable {
     public var displayName: String {
         switch self {
         case .immediately: return "Immediately"
+        case .every15Minutes: return "Every 15 min"
         case .hourlyDigest: return "Hourly Digest"
         case .dailyDigest: return "Daily Digest"
         case .quiet: return "Quiet"
@@ -353,6 +355,11 @@ public struct Message: Identifiable, Codable, Equatable {
     public var sentAt: Date
     public var body: String
     public var isFromUser: Bool
+    public var readState: ReadState
+    public var senderId: String
+    public var eventKind: MessageEventKind
+    public var contentAvailability: ContentAvailability
+    public var truncated: Bool
 
     public init(
         id: String,
@@ -362,7 +369,12 @@ public struct Message: Identifiable, Codable, Equatable {
         senderLabel: String,
         sentAt: Date,
         body: String,
-        isFromUser: Bool
+        isFromUser: Bool,
+        readState: ReadState = .unknown,
+        senderId: String = "unknown",
+        eventKind: MessageEventKind = .message,
+        contentAvailability: ContentAvailability = .available,
+        truncated: Bool = false
     ) {
         self.id = id
         self.sourceId = sourceId
@@ -372,6 +384,16 @@ public struct Message: Identifiable, Codable, Equatable {
         self.sentAt = sentAt
         self.body = body
         self.isFromUser = isFromUser
+        self.readState = isFromUser ? .unknown : readState
+        self.senderId = senderId
+        self.eventKind = eventKind
+        self.contentAvailability = contentAvailability
+        self.truncated = truncated
+    }
+    private enum CodingKeys: String, CodingKey { case id,sourceId,threadId,externalId,senderLabel,sentAt,body,isFromUser,readState,senderId,eventKind,contentAvailability,truncated }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(id: try c.decode(String.self, forKey: .id), sourceId: try c.decode(String.self, forKey: .sourceId), threadId: try c.decode(String.self, forKey: .threadId), externalId: try c.decode(String.self, forKey: .externalId), senderLabel: try c.decode(String.self, forKey: .senderLabel), sentAt: try c.decode(Date.self, forKey: .sentAt), body: try c.decode(String.self, forKey: .body), isFromUser: try c.decode(Bool.self, forKey: .isFromUser), readState: try c.decodeIfPresent(ReadState.self, forKey: .readState) ?? .unknown, senderId: try c.decodeIfPresent(String.self, forKey: .senderId) ?? "unknown", eventKind: try c.decodeIfPresent(MessageEventKind.self, forKey: .eventKind) ?? .message, contentAvailability: try c.decodeIfPresent(ContentAvailability.self, forKey: .contentAvailability) ?? .available, truncated: try c.decodeIfPresent(Bool.self, forKey: .truncated) ?? false)
     }
 }
 

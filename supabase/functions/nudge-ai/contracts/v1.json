@@ -1,0 +1,993 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nudge.local/contracts/v1",
+  "$defs": {
+    "Goal": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "text",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "Participant": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 0
+        },
+        "isLocalUser": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "displayName",
+        "isLocalUser"
+      ],
+      "additionalProperties": false
+    },
+    "LocalUser": {
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 0
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 0
+          },
+          "maxItems": 20,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "displayName",
+        "aliases"
+      ],
+      "additionalProperties": false
+    },
+    "Message": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "senderId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "sentAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "isFromUser": {
+          "type": "boolean"
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 2000,
+          "minLength": 0
+        },
+        "readState": {
+          "type": "string",
+          "enum": [
+            "read",
+            "unread",
+            "unknown"
+          ]
+        },
+        "eventKind": {
+          "type": "string",
+          "enum": [
+            "message",
+            "reaction",
+            "system",
+            "unknown"
+          ]
+        },
+        "contentAvailability": {
+          "type": "string",
+          "enum": [
+            "available",
+            "attachmentOnly",
+            "unavailable"
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "senderId",
+        "sentAt",
+        "isFromUser",
+        "body",
+        "readState",
+        "eventKind",
+        "contentAvailability",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "ActivityFact": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "metric": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 240,
+          "minLength": 0
+        },
+        "windowStart": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "windowEnd": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "metric",
+        "value",
+        "windowStart",
+        "windowEnd"
+      ],
+      "additionalProperties": false
+    },
+    "Coverage": {
+      "type": "object",
+      "properties": {
+        "scanComplete": {
+          "type": "boolean"
+        },
+        "observationStart": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "observationEnd": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "excerptStart": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "minLength": 20,
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "excerptEnd": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "minLength": 20,
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "moreContextAvailable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "scanComplete",
+        "observationStart",
+        "observationEnd",
+        "excerptStart",
+        "excerptEnd",
+        "moreContextAvailable"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceReference": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "message",
+            "activity"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    "Recommendation": {
+      "type": "object",
+      "properties": {
+        "headline": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1
+        },
+        "why": {
+          "type": "string",
+          "maxLength": 600,
+          "minLength": 1
+        },
+        "nextStep": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "follow_through",
+            "read_review",
+            "relationship"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "urgency": {
+          "type": "string",
+          "enum": [
+            "routine",
+            "soon",
+            "urgent"
+          ]
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceReference"
+          },
+          "maxItems": 20,
+          "minItems": 1
+        },
+        "reassessAfter": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "minLength": 20,
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "headline",
+        "why",
+        "nextStep",
+        "basis",
+        "confidence",
+        "urgency",
+        "evidenceRefs",
+        "reassessAfter"
+      ],
+      "additionalProperties": false
+    },
+    "PreviousRecommendation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "content": {
+          "$ref": "#/$defs/Recommendation"
+        }
+      },
+      "required": [
+        "id",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "Feedback": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "recommendationId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "done",
+            "notUseful",
+            "snoozed",
+            "muted",
+            "undone"
+          ]
+        },
+        "at": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 40,
+              "minLength": 20,
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "substantiveRevision": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "follow_through",
+            "read_review",
+            "relationship"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "recommendationId",
+        "action",
+        "at",
+        "until",
+        "substantiveRevision",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "ThreadSnapshot": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "snapshotId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 0
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "group",
+            "unknown"
+          ]
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Participant"
+          },
+          "maxItems": 200,
+          "minItems": 0
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "maxItems": 80,
+          "minItems": 0
+        },
+        "activityFacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ActivityFact"
+          },
+          "maxItems": 60,
+          "minItems": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/Coverage"
+        },
+        "previousRecommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PreviousRecommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "feedback": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Feedback"
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "contextPass": {
+          "type": "string",
+          "enum": [
+            "initial",
+            "expanded"
+          ]
+        }
+      },
+      "required": [
+        "threadId",
+        "snapshotId",
+        "title",
+        "kind",
+        "participants",
+        "messages",
+        "activityFacts",
+        "coverage",
+        "previousRecommendation",
+        "feedback",
+        "contextPass"
+      ],
+      "additionalProperties": false
+    },
+    "ContextRequest": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "maxLength": 240,
+          "minLength": 1
+        },
+        "totalMessages": {
+          "type": "integer",
+          "const": 80
+        }
+      },
+      "required": [
+        "reason",
+        "totalMessages"
+      ],
+      "additionalProperties": false
+    },
+    "Decision": {
+      "type": "object",
+      "properties": {
+        "threadId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "snapshotId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "recommend",
+            "no_action",
+            "needs_context"
+          ]
+        },
+        "decisionSummary": {
+          "type": "string",
+          "maxLength": 240,
+          "minLength": 0
+        },
+        "recommendation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recommendation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contextRequest": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextRequest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "threadId",
+        "snapshotId",
+        "disposition",
+        "decisionSummary",
+        "recommendation",
+        "contextRequest"
+      ],
+      "additionalProperties": false
+    },
+    "AssessmentRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "observedAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "timeZone": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "goal": {
+          "$ref": "#/$defs/Goal"
+        },
+        "localUser": {
+          "$ref": "#/$defs/LocalUser"
+        },
+        "threads": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ThreadSnapshot"
+          },
+          "maxItems": 8,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "runId",
+        "observedAt",
+        "timeZone",
+        "goal",
+        "localUser",
+        "threads"
+      ],
+      "additionalProperties": false
+    },
+    "AssessmentOutput": {
+      "type": "object",
+      "properties": {
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Decision"
+          },
+          "maxItems": 8,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "decisions"
+      ],
+      "additionalProperties": false
+    },
+    "Usage": {
+      "type": "object",
+      "properties": {
+        "inputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "outputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "thinkingTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "inputTokens",
+        "outputTokens",
+        "thinkingTokens"
+      ],
+      "additionalProperties": false
+    },
+    "AssessmentResponse": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "promptVersion": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "decisions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Decision"
+          },
+          "maxItems": 8,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "runId",
+        "model",
+        "promptVersion",
+        "usage",
+        "durationMs",
+        "decisions"
+      ],
+      "additionalProperties": false
+    },
+    "RankedRecommendation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1
+        },
+        "content": {
+          "$ref": "#/$defs/Recommendation"
+        },
+        "evidenceSummaries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2400,
+            "minLength": 0
+          },
+          "maxItems": 20,
+          "minItems": 0
+        },
+        "lastActivityAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "assessedAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "previousOrder": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "content",
+        "evidenceSummaries",
+        "lastActivityAt",
+        "assessedAt",
+        "previousOrder"
+      ],
+      "additionalProperties": false
+    },
+    "RankingRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "observedAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "goal": {
+          "$ref": "#/$defs/Goal"
+        },
+        "recommendations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RankedRecommendation"
+          },
+          "maxItems": 32,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "runId",
+        "observedAt",
+        "goal",
+        "recommendations"
+      ],
+      "additionalProperties": false
+    },
+    "RankingOutput": {
+      "type": "object",
+      "properties": {
+        "orderedRecommendationIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "maxItems": 32,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "orderedRecommendationIds"
+      ],
+      "additionalProperties": false
+    },
+    "RankingResponse": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "maxLength": 36,
+          "minLength": 36,
+          "format": "uuid"
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "promptVersion": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "orderedRecommendationIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "maxItems": 32,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "runId",
+        "model",
+        "promptVersion",
+        "usage",
+        "durationMs",
+        "orderedRecommendationIds"
+      ],
+      "additionalProperties": false
+    },
+    "Status": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "access": {
+          "type": "boolean"
+        },
+        "rolloutEnabled": {
+          "type": "boolean"
+        },
+        "remainingUSD": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "resetsAt": {
+          "type": "string",
+          "maxLength": 40,
+          "minLength": 20,
+          "format": "date-time"
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "assessPromptVersion": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "rankPromptVersion": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "consentVersion": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "access",
+        "rolloutEnabled",
+        "remainingUSD",
+        "resetsAt",
+        "model",
+        "assessPromptVersion",
+        "rankPromptVersion",
+        "consentVersion"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
