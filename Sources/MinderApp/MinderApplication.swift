@@ -6,8 +6,8 @@ import MinderCore
 final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Sendable {
     private static var retainedDelegate: MinderApplication?
     private static let backgroundSyncInterval: TimeInterval = 15 * 60
-    private static let queueWindowFrameName = "NudgeQueueWindow"
-    private static let onboardingWindowFrameName = "NudgeSetupWindow"
+    private static let queueWindowFrameKey = "nudge.queue-window.frame.v1"
+    private static let onboardingWindowFrameKey = "nudge.setup-window.frame.v1"
     private var statusItem: NSStatusItem?
     private var syncTimer: Timer?
     private var viewModel: MinderViewModel?
@@ -160,14 +160,14 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
         window.level = .floating
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
-        if !window.setFrameUsingName(Self.queueWindowFrameName) { window.center() }
-        window.setFrameAutosaveName(Self.queueWindowFrameName)
         window.isReleasedWhenClosed = false
         window.contentViewController = NSHostingController(rootView: InboxView(model: viewModel, settingsModel: settingsViewModel))
+        let restoredFrame = restoreFrame(of: window, key: Self.queueWindowFrameKey)
         window.delegate = self
         queueWindow = window
 
         window.makeKeyAndOrderFront(nil)
+        if restoredFrame { restoreFrame(of: window, key: Self.queueWindowFrameKey) }
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -189,13 +189,13 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
         window.level = .floating
         window.isFloatingPanel = true
         window.hidesOnDeactivate = false
-        if !window.setFrameUsingName(Self.onboardingWindowFrameName) { window.center() }
-        window.setFrameAutosaveName(Self.onboardingWindowFrameName)
         window.isReleasedWhenClosed = false
         window.contentViewController = NSHostingController(rootView: OnboardingView(model: settingsViewModel))
+        let restoredFrame = restoreFrame(of: window, key: Self.onboardingWindowFrameKey)
         window.delegate = self
         onboardingWindow = window
         window.makeKeyAndOrderFront(nil)
+        if restoredFrame { restoreFrame(of: window, key: Self.onboardingWindowFrameKey) }
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -207,6 +207,38 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
                 self?.viewModel?.syncAndGenerateSuggestions(reason: .periodic)
             }
         }
+    }
+
+    @MainActor
+    @discardableResult
+    private func restoreFrame(of window: NSWindow, key: String) -> Bool {
+        guard let encoded = UserDefaults.standard.string(forKey: key) else {
+            window.center()
+            return false
+        }
+        let saved = NSRectFromString(encoded)
+        guard saved.width > 0, saved.height > 0,
+              saved.origin.x.isFinite, saved.origin.y.isFinite,
+              saved.width.isFinite, saved.height.isFinite,
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: saved.midX, y: saved.midY)) })
+                ?? NSScreen.main else {
+            window.center()
+            return false
+        }
+        let visible = screen.visibleFrame
+        let width = min(saved.width, visible.width)
+        let height = min(saved.height, visible.height)
+        let origin = NSPoint(
+            x: min(max(saved.minX, visible.minX), visible.maxX - width),
+            y: min(max(saved.minY, visible.minY), visible.maxY - height)
+        )
+        window.setFrame(NSRect(origin: origin, size: NSSize(width: width, height: height)), display: false)
+        return true
+    }
+
+    @MainActor
+    private func saveFrame(of window: NSWindow, key: String) {
+        UserDefaults.standard.set(NSStringFromRect(window.frame), forKey: key)
     }
 
     @MainActor
@@ -234,6 +266,8 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let queueWindow { saveFrame(of: queueWindow, key: Self.queueWindowFrameKey) }
+        if let onboardingWindow { saveFrame(of: onboardingWindow, key: Self.onboardingWindowFrameKey) }
         syncTimer?.invalidate()
         syncTimer = nil
         petTimer?.invalidate()
@@ -244,11 +278,11 @@ final class MinderApplication: NSObject, NSApplicationDelegate, @unchecked Senda
 extension MinderApplication: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         if notification.object as? NSWindow === queueWindow {
-            queueWindow?.saveFrame(usingName: Self.queueWindowFrameName)
+            if let queueWindow { saveFrame(of: queueWindow, key: Self.queueWindowFrameKey) }
             queueWindow = nil
         }
         if notification.object as? NSWindow === onboardingWindow {
-            onboardingWindow?.saveFrame(usingName: Self.onboardingWindowFrameName)
+            if let onboardingWindow { saveFrame(of: onboardingWindow, key: Self.onboardingWindowFrameKey) }
             onboardingWindow = nil
         }
     }
