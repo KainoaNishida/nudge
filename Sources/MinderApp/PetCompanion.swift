@@ -8,13 +8,23 @@ enum PetEdge: String, Codable, CaseIterable {
 }
 
 struct PetOptions: Codable, Equatable {
+    static let defaultSpriteSize = 60
+    static let spriteSizes = [48, 60, 72, 84, 96]
+
     var enabled = true
     var edge: PetEdge = .right
+    // Optional so saved settings from older builds still decode.
+    var spriteSize: Int?
     var horizontalFraction: Double?
     var verticalFraction = 0.28
     var displayID: UInt32?
     var hiddenUntil: Date?
     var pausedForScreenSharing = false
+
+    var selectedSpriteSize: Int {
+        let requested = min(Self.spriteSizes.last!, max(Self.spriteSizes.first!, spriteSize ?? Self.defaultSpriteSize))
+        return Self.spriteSizes.min(by: { abs($0 - requested) < abs($1 - requested) }) ?? Self.defaultSpriteSize
+    }
 }
 
 @MainActor
@@ -36,6 +46,7 @@ final class PetSettings: ObservableObject {
     func update(_ change: (inout PetOptions) -> Void) {
         var next = options
         change(&next)
+        if next.spriteSize != nil { next.spriteSize = next.selectedSpriteSize }
         if let fraction = next.horizontalFraction { next.horizontalFraction = min(1, max(0, fraction)) }
         next.verticalFraction = min(1, max(0, next.verticalFraction))
         options = next
@@ -54,6 +65,7 @@ final class PetSettings: ObservableObject {
 final class PetDisplay: ObservableObject {
     @Published var alerting = false
     @Published var edge: PetEdge = .right
+    @Published var spriteSize: CGFloat = CGFloat(PetOptions.defaultSpriteSize)
 }
 
 @MainActor
@@ -65,14 +77,19 @@ final class PetWindowController {
     private let openSettings: () -> Void
     private var dragStart: (mouse: NSPoint, origin: NSPoint)?
     private var attentionTimer: Timer?
-    private static let catSize = NSSize(width: 76, height: 84)
-    private static let alertSize = NSSize(width: 166, height: 112)
+    private static func catSize(for spriteSize: CGFloat) -> NSSize {
+        NSSize(width: spriteSize + 16, height: spriteSize + 24)
+    }
+
+    private static func alertSize(for spriteSize: CGFloat) -> NSSize {
+        NSSize(width: spriteSize + 106, height: spriteSize + 52)
+    }
 
     init(settings: PetSettings, openQueue: @escaping () -> Void, openSettings: @escaping () -> Void) {
         self.settings = settings
         self.openQueue = openQueue
         self.openSettings = openSettings
-        panel = NSPanel(contentRect: NSRect(origin: .zero, size: Self.catSize),
+        panel = NSPanel(contentRect: NSRect(origin: .zero, size: Self.catSize(for: CGFloat(settings.options.selectedSpriteSize))),
                         styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications, .transient, .fullScreenAuxiliary]
@@ -99,6 +116,7 @@ final class PetWindowController {
         guard settings.isVisibleNow else { panel.orderOut(nil); return }
         if dragStart != nil { return }
         display.edge = settings.options.edge
+        display.spriteSize = CGFloat(settings.options.selectedSpriteSize)
         place(on: selectedScreen(), animated: false)
         if !panel.isVisible { panel.orderFrontRegardless() }
     }
@@ -136,16 +154,17 @@ final class PetWindowController {
     private func place(on screen: NSScreen?, animated: Bool) {
         guard let screen else { return }
         let area = screen.visibleFrame
-        let size = display.alerting ? Self.alertSize : Self.catSize
+        let catSize = Self.catSize(for: display.spriteSize)
+        let size = display.alerting ? Self.alertSize(for: display.spriteSize) : catSize
         let idleX: CGFloat
         if let fraction = settings.options.horizontalFraction {
-            idleX = area.minX + max(0, area.width - Self.catSize.width) * fraction
+            idleX = area.minX + max(0, area.width - catSize.width) * fraction
         } else {
-            idleX = settings.options.edge == .right ? area.maxX - Self.catSize.width - 12 : area.minX + 12
+            idleX = settings.options.edge == .right ? area.maxX - catSize.width - 12 : area.minX + 12
         }
-        let preferredX = display.alerting && settings.options.edge == .right ? idleX - (size.width - Self.catSize.width) : idleX
+        let preferredX = display.alerting && settings.options.edge == .right ? idleX - (size.width - catSize.width) : idleX
         let x = min(max(preferredX, area.minX), max(area.minX, area.maxX - size.width))
-        let preferredY = area.minY + max(0, area.height - Self.catSize.height) * settings.options.verticalFraction
+        let preferredY = area.minY + max(0, area.height - catSize.height) * settings.options.verticalFraction
         let y = min(max(preferredY, area.minY), max(area.minY, area.maxY - size.height))
         let frame = NSRect(x: x, y: y, width: size.width, height: size.height)
         panel.setFrame(frame, display: true, animate: animated)
@@ -161,14 +180,15 @@ final class PetWindowController {
     private func finishDrag() {
         guard dragStart != nil else { return }
         dragStart = nil
-        let catX = display.alerting && display.edge == .right ? panel.frame.maxX - Self.catSize.width : panel.frame.minX
-        let center = NSPoint(x: catX + Self.catSize.width / 2, y: panel.frame.minY + Self.catSize.height / 2)
+        let catSize = Self.catSize(for: display.spriteSize)
+        let catX = display.alerting && display.edge == .right ? panel.frame.maxX - catSize.width : panel.frame.minX
+        let center = NSPoint(x: catX + catSize.width / 2, y: panel.frame.minY + catSize.height / 2)
         let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? selectedScreen()
         guard let screen else { return }
         let area = screen.visibleFrame
         let edge: PetEdge = center.x < area.midX ? .left : .right
-        let horizontalFraction = (catX - area.minX) / max(1, area.width - Self.catSize.width)
-        let verticalFraction = (panel.frame.minY - area.minY) / max(1, area.height - Self.catSize.height)
+        let horizontalFraction = (catX - area.minX) / max(1, area.width - catSize.width)
+        let verticalFraction = (panel.frame.minY - area.minY) / max(1, area.height - catSize.height)
         settings.update {
             $0.edge = edge
             $0.horizontalFraction = horizontalFraction
@@ -227,9 +247,9 @@ private struct PixelCatOverlay: View {
                 PixelCatSprite(alerting: display.alerting,
                                alternate: tick % 4 < 2,
                                blink: !display.alerting && tick % 28 == 0)
-                    .frame(width: 60, height: 60)
+                    .frame(width: display.spriteSize, height: display.spriteSize)
             }
-            .frame(width: 64, height: 62)
+            .frame(width: display.spriteSize + 4, height: display.spriteSize + 2)
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 3)
                 .onChanged { _ in drag(NSEvent.mouseLocation) }
@@ -339,6 +359,17 @@ struct PetSettingsView: View {
             ))
             Text("The cat can sit anywhere on a screen, including full-screen Spaces. It reacts only when an actionable conversation is added or substantively updated.")
                 .font(.caption).foregroundStyle(.secondary)
+            Picker("Cat size", selection: Binding(
+                get: { settings.options.selectedSpriteSize },
+                set: { size in settings.update { $0.spriteSize = size } }
+            )) {
+                Text("Smaller").tag(48)
+                Text("Default").tag(60)
+                Text("Medium").tag(72)
+                Text("Large").tag(84)
+                Text("Largest").tag(96)
+            }
+            .pickerStyle(.segmented)
             HStack {
                 Picker("Screen", selection: Binding(
                     get: { settings.options.displayID },

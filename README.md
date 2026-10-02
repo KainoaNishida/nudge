@@ -56,7 +56,7 @@ The cat's X hides it until you turn **Show the pixel cat** back on in Settings; 
 
 - `Status` summarizes whether Messages import and core permissions are healthy.
 - `Messages` manages Full Disk Access, recent import, and optional Contacts access.
-- `Pixel cat` controls visibility, screen, optional edge placement, manual screen-sharing pause, a one-hour hide, cadence, and quiet hours. Dragging the cat moves it freely and saves its position.
+- `Pixel cat` controls visibility, size, screen, optional edge placement, manual screen-sharing pause, a one-hour hide, cadence, and quiet hours. Size changes take effect immediately. Dragging the cat moves it freely and saves its position.
 - `AI` offers local-only compatibility mode and invited managed AI with an optional goal, email-code sign-in, and explicit data-sharing consent.
 - `Theme` changes the accent color used by the queue and setup screens.
 - `Privacy` can delete generated suggestions, imported Messages cache, or all local Nudge data.
